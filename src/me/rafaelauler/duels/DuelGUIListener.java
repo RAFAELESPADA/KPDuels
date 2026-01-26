@@ -45,6 +45,7 @@ public class DuelGUIListener implements Listener {
             case BARRIER:
                 QueueManager.cancel(p);
                 break;
+            case BOOK: StatsGUI.open(p); break; // abre a GUI de stats
 
             default:
                 return;

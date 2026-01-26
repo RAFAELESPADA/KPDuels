@@ -18,7 +18,7 @@ public class DamageListener implements Listener {
 
         if (duel.getKit() == KitType.BOXING) {
             e.setDamage(0.1);
-            DuelManager.addHit(p, (Player) e.getEntity());
+            DuelManager.addHit(p);
 
             if (DuelManager.getHits(p) >= 100) {
                 DuelManager.end(duel, p);

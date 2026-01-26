@@ -61,6 +61,7 @@ public class DuelGUI {
                 "§cCancelar fila",
                 "§7Clique para sair da fila"
         ));
+        inv.setItem(22, item(Material.BOOK, "§eStats", "§7Clique para ver seus stats")); // slot de stats
     }
 
     private static ItemStack kitItem(Player p, KitType kit, Material mat, String name, String desc) {
