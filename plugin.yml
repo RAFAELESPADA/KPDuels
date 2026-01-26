@@ -1,0 +1,20 @@
+name: Duels
+version: 1.0
+main: me.rafaelauler.duels.DuelPlugin
+api-version: 1.8
+commands:
+  duel:
+    description: Entrar em um duelo
+  accept:
+    description: Aceitar desafio
+  deny:
+    description: Recusar desafio
+  duels:
+    description: Entrar no lobby de Duels
+  setduelspawn:
+  setduelarena:
+  setschematic:
+  saveschematic:
+    description: Salva a seleção atual do WorldEdit como schematic
+    usage: /saveschematic <nome>      
+  
