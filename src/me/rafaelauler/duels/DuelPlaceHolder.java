@@ -1,6 +1,8 @@
 package me.rafaelauler.duels;
 
 
+import java.sql.SQLException;
+
 import org.bukkit.entity.Player;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
@@ -31,6 +33,13 @@ public class DuelPlaceHolder extends PlaceholderExpansion {
     public String onPlaceholderRequest(Player p, String identifier) {
         if (p == null) return "";
 
+        PlayerStats stats = null;
+		try {
+			stats = DuelPlugin.my.getStats(p.getUniqueId());
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         switch (identifier.toLowerCase()) {
 
             case "opponent":
@@ -44,12 +53,20 @@ public class DuelPlaceHolder extends PlaceholderExpansion {
                     return String.valueOf(DuelManager.getHits(p));
                 }
                 return "0";
-
+            case "wins":
+                    return String.valueOf(stats.getWins());
+            case "losses":
+                    return String.valueOf(stats.getLosses()); 
+            case "ws":
+                return String.valueOf(stats.getWinstreak()); 
             case "kit":
                 if (DuelManager.isInDuel(p)) {
                     return DuelManager.get(p).getKit().name();
                 }
                 return "Nenhum";
+            case "players":
+               return String.valueOf(DuelsCommand.game.size());
+        
 
             case "status":
                 if (DuelManager.isInDuel(p)) {
@@ -57,7 +74,7 @@ public class DuelPlaceHolder extends PlaceholderExpansion {
                 }
                 return "Nenhum";
         
-    case "online":
+    case "emduelo":
         // Conta todos os players que estão em duelo
         int playersInDuels = DuelManager.getAllDuels().stream()
                 .mapToInt(d -> d.getPlayers().length) // cada duelo tem p1 e p2

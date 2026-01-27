@@ -27,8 +27,8 @@ public class SetDuelArena implements CommandExecutor {
             return true;
         }
 
-        if (args.length != 1) {
-            p.sendMessage("§cUse /setduelarena <nome>");
+        if (args.length != 2) {
+            p.sendMessage("§cUse: /setduelarena <nome> <kit>");
             return true;
         }
 
@@ -38,16 +38,33 @@ public class SetDuelArena implements CommandExecutor {
             return true;
         }
 
+        String arenaName = args[0].toLowerCase();
+        KitType kit;
+
+        try {
+            kit = KitType.valueOf(args[1].toUpperCase());
+        } catch (Exception e) {
+            p.sendMessage("§cKit inválido.");
+            return true;
+        }
+
         Location pos1 = sel.getMinimumPoint();
         Location pos2 = sel.getMaximumPoint();
-        String arenaName = args[0].toLowerCase();
 
-        Arena arena = new Arena(arenaName, pos1, pos2, p.getLocation(), p.getLocation());
+        Location spawn = p.getLocation();
+
+        Arena arena = new Arena(arenaName, kit, pos1, pos2, spawn, spawn);
+
+
         ArenaManager.add(arena);
         ArenaManager.saveArena(arena);
 
         p.sendMessage("§aArena §f" + arenaName + " §acriada com sucesso!");
-        p.sendMessage("§7Agora você pode definir o spawn com /setduelspawn <arena> <1|2> e salvar a schematic com /setschematic <arena> <nome>");
+        p.sendMessage("§7Kit: §f" + kit.name());
+        p.sendMessage("§7Defina os spawns com:");
+        p.sendMessage("§f/setduelspawn " + arenaName + " 1");
+        p.sendMessage("§f/setduelspawn " + arenaName + " 2");
+
         return true;
     }
 }

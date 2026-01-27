@@ -1,31 +1,51 @@
 package me.rafaelauler.duels;
-
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 public class Arena {
 
     private final String name;
-    private Location pos1, pos2;       // Área da arena
-    private Location spawn1, spawn2;   // Spawns de jogadores
-    private String schematic;           // Nome da schematic
+    private String schematic;
     private boolean inUse = false;
 
-    public Arena(String name, Location pos1, Location pos2, Location spawn1, Location spawn2) {
+    private KitType kitType;
+    private Location pos1, pos2;
+    private Location spawn1, spawn2;
+
+    public Arena(String name, KitType kitType, Location pos1, Location pos2, Location spawn1, Location spawn2) {
         this.name = name;
+        this.kitType = kitType;
         this.pos1 = pos1;
         this.pos2 = pos2;
         this.spawn1 = spawn1;
         this.spawn2 = spawn2;
     }
 
+    public KitType getKitType() {
+        return kitType;
+    }
+
+    public void setPos1(Location pos1) {
+        this.pos1 = pos1;
+    }
+
+    public void setPos2(Location pos2) {
+        this.pos2 = pos2;
+    }
+    // ❌ NÃO mexe em inUse
     public void teleport(Player p1, Player p2) {
-        inUse = true;
         p1.teleport(spawn1);
         p2.teleport(spawn2);
     }
 
-    public void release() { inUse = false; }
+    // Somente o ArenaManager pode chamar isso
+    protected void setInUse(boolean use) {
+        this.inUse = use;
+    }
+
+    protected void release() {
+        this.inUse = false;
+    }
 
     public boolean isInUse() { return inUse; }
 

@@ -63,33 +63,49 @@ public class ChallengeManager {
         cooldowns.remove(p.getUniqueId());
     }
     /* ================= DESAFIO ================= */
-
+    public static void clear(Player target) {
+        clearChallenge(target);
+    }
     public static void challenge(Player challenger, Player target) {
-    	if (inCooldown(challenger)) {
-            challenger.sendMessage("§cAguarde §f" + getCooldown(challenger) + "s §cpara desafiar novamente.");
+
+        if (challenger.equals(target)) {
             return;
         }
+
+        if (inCooldown(challenger)) {
+            return;
+        }
+
+        if (hasChallenge(target)) {
+            return;
+        }
+
         if (DuelManager.isInDuel(challenger) || DuelManager.isInDuel(target)) {
-            challenger.sendMessage("§cAlguém já está em duelo.");
             return;
         }
-        applyCooldown(challenger); // ⏱️ aplica cooldown
+
+        // Limpa modo seleção
+        cancelSelecting(challenger);
+
         challenges.put(target.getUniqueId(), challenger.getUniqueId());
+        applyCooldown(challenger);
+
 
         BukkitRunnable task = new BukkitRunnable() {
             @Override
             public void run() {
-                if (hasChallenge(target)) {
-                    clearChallenge(target);
-                    challenger.sendMessage("§cO desafio expirou.");
-                    target.sendMessage("§cO desafio expirou.");
-                }
+                if (!hasChallenge(target)) return;
+
+                clearChallenge(target);
+                challenger.sendMessage("§cO desafio expirou.");
+                target.sendMessage("§cO desafio expirou.");
             }
         };
 
         task.runTaskLater(plugin, 20L * 30);
         timeouts.put(target.getUniqueId(), task);
     }
+
 
     public static boolean hasChallenge(Player p) {
         return challenges.containsKey(p.getUniqueId());
@@ -112,7 +128,7 @@ public class ChallengeManager {
 
     /* ================= ACEITAR / NEGAR ================= */
 
-    public static void accept(Player target) {
+    public static void accept(Player target, KitType kit) {
 
         if (!hasChallenge(target)) {
             target.sendMessage("§cVocê não tem desafios pendentes.");
@@ -120,29 +136,52 @@ public class ChallengeManager {
         }
 
         Player challenger = getChallenger(target);
-        challenges.remove(target.getUniqueId());
+        clearChallenge(target);
 
-        BukkitRunnable task = timeouts.remove(target.getUniqueId());
-        if (task != null) task.cancel();
-
-        if (challenger != null) {
-            resetCooldown(challenger); // 🔥 RESET DO COOLDOWN
+        if (challenger == null) {
+            target.sendMessage("§cO jogador não está mais online.");
+            return;
         }
 
-        Duel duel = new Duel(challenger, target, ArenaManager.get(), KitType.UHC);
+        // 1️⃣ Busca arena ANTES
+        Arena arena = ArenaManager.getFreeArena(kit);
+
+        if (arena == null) {
+            challenger.sendMessage("§cNão há arenas disponíveis no momento.");
+            target.sendMessage("§cNão há arenas disponíveis no momento.");
+            return;
+        }
+
+        // 2️⃣ Cria duelo JÁ com arena
+        Duel duel = new Duel(challenger, target, arena, KitType.UHC);
+
+        // 3️⃣ Inicia
+        if (!duel.start()) {
+            ArenaManager.release(arena);
+            return;
+        }
+
+        resetCooldown(challenger);
         DuelManager.add(duel);
     }
 
 
+
     public static void deny(Player target) {
+
+        if (!hasChallenge(target)) {
+            target.sendMessage("§cVocê não tem desafios pendentes.");
+            return;
+        }
 
         Player challenger = getChallenger(target);
         clearChallenge(target);
 
         if (challenger != null) {
             challenger.sendMessage("§cSeu desafio foi recusado.");
+            resetCooldown(challenger);
         }
-        resetCooldown(challenger);
+
         target.sendMessage("§cVocê recusou o desafio.");
     }
 }

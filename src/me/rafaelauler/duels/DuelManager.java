@@ -1,7 +1,7 @@
 package me.rafaelauler.duels;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,14 +11,12 @@ import org.bukkit.entity.Player;
 
 public class DuelManager {
 
-    private static final List<Duel> duels = new ArrayList<>();
+    private static final List<Duel> duels = Collections.synchronizedList(new ArrayList<>());
     private static final Map<UUID, Integer> boxingHits = new HashMap<>();
-    private static MySQLManager mysql;
-
-    public static void setMySQL(MySQLManager manager) { mysql = manager; }
 
     public static void add(Duel duel) {
         duels.add(duel);
+
         if (duel.getKit() == KitType.BOXING) {
             boxingHits.put(duel.getP1().getUniqueId(), 0);
             boxingHits.put(duel.getP2().getUniqueId(), 0);
@@ -26,39 +24,60 @@ public class DuelManager {
     }
 
     public static Duel get(Player p) {
-        for (Duel d : duels) if (d.hasPlayer(p)) return d;
+        synchronized (duels) {
+            for (Duel d : duels) {
+                if (d.hasPlayer(p)) return d;
+            }
+        }
         return null;
     }
-
-    public static boolean isInDuel(Player p) { return get(p) != null; }
-
-    public static List<Duel> getAllDuels() { return new ArrayList<>(duels); }
-
-    public static void addHit(Player p) {
-        if (!boxingHits.containsKey(p.getUniqueId())) return;
-        boxingHits.put(p.getUniqueId(), boxingHits.get(p.getUniqueId()) + 1);
+    public static void remove(Player p) {
+        synchronized (duels) {
+            duels.removeIf(d -> d.hasPlayer(p));
+            boxingHits.remove(p.getUniqueId());
+        }
+    }
+    public static boolean isInDuel(Player p) {
+        return get(p) != null;
     }
 
-    public static int getHits(Player p) { return boxingHits.getOrDefault(p.getUniqueId(), 0); }
+    /** 🔥 ÚNICO JEITO CORRETO DE FINALIZAR UM DUELO */
+    public static void end(Player winner) {
 
-    public static void end(Duel duel, Player winner) {
-        duel.end(winner);
-        Player loser = duel.getOpponent(winner);
+        Duel duel = get(winner);
+        if (duel == null) return;
 
-        try {
-            PlayerStats winnerStats = mysql.getStats(winner.getUniqueId());
-            winnerStats.addWin();
-            mysql.saveStats(winnerStats);
-
-            PlayerStats loserStats = mysql.getStats(loser.getUniqueId());
-            loserStats.addLoss();
-            mysql.saveStats(loserStats);
-        } catch (SQLException e) {
-            e.printStackTrace();
+        synchronized (duels) {
+            duel.end(winner);
+            duels.remove(duel);
         }
+    }
 
-        duels.remove(duel);
-        boxingHits.remove(duel.getP1().getUniqueId());
-        boxingHits.remove(duel.getP2().getUniqueId());
+    /** ⚠️ Usado apenas para quit / crash */
+    public static void forceEnd(Player p) {
+
+        Duel duel = get(p);
+        if (duel == null) return;
+
+        synchronized (duels) {
+            duel.end(null);
+            duels.remove(duel);
+        }
+    }
+
+    public static void addHit(Player p) {
+        boxingHits.computeIfPresent(p.getUniqueId(), (k, v) -> v + 1);
+    }
+
+    public static int getHits(Player p) {
+        return boxingHits.getOrDefault(p.getUniqueId(), 0);
+    }
+
+    public static Map<UUID, Integer> getBoxinghits() {
+        return boxingHits;
+    }
+
+    public static List<Duel> getAllDuels() {
+        return new ArrayList<>(duels);
     }
 }

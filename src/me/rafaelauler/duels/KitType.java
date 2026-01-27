@@ -1,6 +1,7 @@
 package me.rafaelauler.duels;
 
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -32,7 +33,13 @@ public enum KitType {
         p.getInventory().addItem(
                 new ItemStack(Material.DIAMOND_SWORD)
         );
+        p.getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
 
+    	p.getInventory().setHelmet(new ItemStack(Material.IRON_HELMET));
+
+    	p.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
+
+    	p.getInventory().setLeggings(new ItemStack(Material.IRON_LEGGINGS));
         for (int i = 0; i < 35; i++) {
             p.getInventory().addItem(
                     new ItemStack(Material.MUSHROOM_SOUP)
@@ -52,23 +59,26 @@ public enum KitType {
                 giveSoup(p);
                 break;
             case UHC:
-            	p.getInventory().setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
+            	p.getInventory().setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE));
 
             	p.getInventory().setHelmet(new ItemStack(Material.IRON_HELMET));
 
             	p.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
 
-            	p.getInventory().setLeggings(new ItemStack(Material.IRON_LEGGINGS));
+            	p.getInventory().setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS));
                 p.getInventory().addItem(
                         new ItemStack(Material.DIAMOND_SWORD),
                         new ItemStack(Material.GOLDEN_APPLE, 3)
                 );
+                new ItemStack(Material.BOW);
+                new ItemStack(Material.ARROW, 24);
                 break;
 
             case BOXING:
-                p.getInventory().addItem(
-                        new ItemStack(Material.DIAMOND_SWORD)
-                );
+                ItemStack i = 
+                        new ItemStack(Material.DIAMOND_SWORD);
+                i.addEnchantment(Enchantment.DAMAGE_ALL, 2);
+                        p.getInventory().addItem(i);
                 break;
         }
     }

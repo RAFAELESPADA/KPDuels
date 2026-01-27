@@ -1,8 +1,8 @@
 package me.rafaelauler.duels;
 
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 
 public class LocationUtil {
 
@@ -14,16 +14,19 @@ public class LocationUtil {
                l.getPitch();
     }
 
-    public static Location fromString(String s, String world) {
-        String[] p = s.split(",");
+    public static Location fromString(String s, World world) {
+        if (s == null || world == null) return null;
 
-        return new Location(
-                Bukkit.getWorld(world),
-                Double.parseDouble(p[0]),
-                Double.parseDouble(p[1]),
-                Double.parseDouble(p[2]),
-                Float.parseFloat(p[3]),
-                Float.parseFloat(p[4])
-        );
+        String[] split = s.split(",");
+
+        double x = Double.parseDouble(split[0]);
+        double y = Double.parseDouble(split[1]);
+        double z = Double.parseDouble(split[2]);
+
+        float yaw = split.length > 3 ? Float.parseFloat(split[3]) : 0f;
+        float pitch = split.length > 4 ? Float.parseFloat(split[4]) : 0f;
+
+        return new Location(world, x, y, z, yaw, pitch);
     }
+
 }

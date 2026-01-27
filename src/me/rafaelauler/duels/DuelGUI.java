@@ -18,13 +18,27 @@ public class DuelGUI {
     public static final String TITLE = "§8Selecione um modo";
     private static final Map<UUID, BukkitRunnable> tasks = new HashMap<>();
 
+    /* ======================= OPEN ======================= */
+
     public static void open(Player p) {
+
+        // 🔥 Anti-spam de abertura
+        if (ClickCooldown.inCooldown(p.getUniqueId())) {
+            p.sendMessage("§cAguarde um instante...");
+            return;
+        }
+        ClickCooldown.apply(p.getUniqueId());
+
         Inventory inv = Bukkit.createInventory(null, 27, TITLE);
         p.openInventory(inv);
         startUpdateTask(p, inv);
     }
 
+    /* ======================= UPDATE ======================= */
+
     public static void update(Player p, Inventory inv) {
+
+        fill(inv);
 
         inv.setItem(11, kitItem(
                 p,
@@ -49,24 +63,33 @@ public class DuelGUI {
                 "§bBoxing",
                 "§7Primeiro a 100 hits"
         ));
+
         inv.setItem(17, kitItem(
                 p,
                 KitType.SOUP,
                 Material.MUSHROOM_SOUP,
-                "§bSopa",
-                "§7Modo clássico de 1v1 com sopa"
+                "§eSopa",
+                "§7Modo clássico com sopa"
         ));
+
         inv.setItem(22, item(
+                Material.BOOK,
+                "§eStats",
+                "§7Clique para ver seus stats"
+        ));
+
+        inv.setItem(25, item(
                 Material.BARRIER,
                 "§cCancelar fila",
                 "§7Clique para sair da fila"
         ));
-        inv.setItem(22, item(Material.BOOK, "§eStats", "§7Clique para ver seus stats")); // slot de stats
     }
+
+    /* ======================= KIT ITEM ======================= */
 
     private static ItemStack kitItem(Player p, KitType kit, Material mat, String name, String desc) {
 
-        // Player está nessa fila
+        // Player já está nessa fila
         if (QueueManager.isInQueue(p, kit)) {
             return item(
                     mat,
@@ -76,16 +99,18 @@ public class DuelGUI {
             );
         }
 
-        // Contador simples (0 ou 1)
-        boolean someoneWaiting = QueueManager.isKitBusy(kit);
+        int count = QueueManager.getQueueSize(kit);
 
         return item(
                 mat,
                 name,
                 desc,
-                "§fNa fila: §a" + (someoneWaiting ? 1 : 0)
+                "",
+                "§fNa fila: §a" + count
         );
     }
+
+    /* ======================= TASK ======================= */
 
     private static void startUpdateTask(Player p, Inventory inv) {
 
@@ -106,13 +131,29 @@ public class DuelGUI {
             }
         };
 
-        task.runTaskTimer(DuelPlugin.getPlugin(DuelPlugin.class), 0L, 20L);
+        task.runTaskTimer(
+                DuelPlugin.getPlugin(DuelPlugin.class),
+                0L,
+                20L
+        );
+
         tasks.put(p.getUniqueId(), task);
     }
 
     public static void stopTask(Player p) {
         BukkitRunnable task = tasks.remove(p.getUniqueId());
         if (task != null) task.cancel();
+    }
+
+    /* ======================= UTIL ======================= */
+
+    private static void fill(Inventory inv) {
+        ItemStack glass = item(Material.STAINED_GLASS_PANE, "§7");
+        for (int i = 0; i < inv.getSize(); i++) {
+            if (inv.getItem(i) == null) {
+                inv.setItem(i, glass);
+            }
+        }
     }
 
     private static ItemStack item(Material mat, String name, String... lore) {

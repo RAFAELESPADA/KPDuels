@@ -25,16 +25,23 @@ public class MySQLManager {
     // Conecta ao MySQL
     public void connect() throws SQLException, ClassNotFoundException {
         if (isConnected()) return;
-        Class.forName("com.mysql.jdbc.Driver"); // compatível 1.8.8
+        Class.forName("com.mysql.cj.jdbc.Driver");
+// compatível 1.8.8
         connection = DriverManager.getConnection(
-                "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false",
+        		"jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC",
+
                 user,
                 password
         );
+        createTable();
     }
 
     public boolean isConnected() {
-        return connection != null;
+        try {
+            return connection != null && !connection.isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     public void disconnect() throws SQLException {

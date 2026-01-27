@@ -1,6 +1,6 @@
 package me.rafaelauler.duels;
 
-
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -10,43 +10,65 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
-
 public class MoveListener implements Listener {
 
+    // ====================================
+    // BLOQUEIA PLAYER STARTING / RESTRINGE MOVIMENTO
+    // ====================================
     @EventHandler
     public void onMove(PlayerMoveEvent e) {
-        Duel duel = DuelManager.get(e.getPlayer());
+        Player p = e.getPlayer();
+        Duel duel = DuelManager.get(p);
         if (duel == null) return;
-if (duel.getKit() == KitType.SUMO) {
-    Block block = e.getPlayer().getLocation().getBlock().getRelative(BlockFace.DOWN);
-        if (block.getType() == Material.WATER || block.getType() == Material.STATIONARY_WATER) {
-            DuelManager.end(duel, duel.getOpponent(e.getPlayer()));
+
+        // 🔒 BLOQUEIA QUANDO O DUEL ESTÁ STARTING
+        if (duel.getState() == DuelState.STARTING) {
+            if (!e.getFrom().equals(e.getTo())) {
+                e.setTo(e.getFrom());
+            }
+            return;
+        }
+
+        // ====================================
+        // SUMO: verifica se caiu na água
+        // ====================================
+        if (duel.getKit() == KitType.SUMO) {
+            Block below = p.getLocation().getBlock().getRelative(BlockFace.DOWN);
+            if (below.getType() == Material.WATER || below.getType() == Material.STATIONARY_WATER) {
+                // o oponente vence
+                DuelManager.end(duel.getOpponent(p));
+               p.teleport(Bukkit.getWorld("duels").getSpawnLocation());
+                LobbyItems.give(p);
+                return;
+            }
+        }
+
+        // ====================================
+        // Checa distância máxima (fuga ou sair do duelo)
+        // ====================================
+        Player opponent = duel.getOpponent(p);
+        if (opponent != null && p.getLocation().distance(opponent.getLocation()) > 157) {
+            DuelManager.end(opponent);
         }
     }
-    }
 
+    // ====================================
+    // QUANDO MUDAR DE WORLD
+    // ====================================
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
-
         Player p = e.getPlayer();
 
-        if (!p.getWorld().getName().equalsIgnoreCase("duels")) return;
+        // se estava em duelo, termina
+        Duel duel = DuelManager.get(p);
+        if (duel != null) {
+            DuelManager.end(duel.getOpponent(p));
+        }
 
-        if (DuelManager.isInDuel(p)) return; // 🔒 BLOQUEIA
-
-        p.getInventory().clear();
-        LobbyItems.give(p);
-    }
-
-@EventHandler
-public void onMove2(PlayerMoveEvent e) {
-
-    Duel duel = DuelManager.get(e.getPlayer());
-
-    if (duel != null && duel.getState() == DuelState.STARTING) {
-        if (e.getFrom().distance(e.getTo()) > 0) {
-            e.setTo(e.getFrom());
+        // limpa inventário e dá itens de lobby se não estiver mais em duelo
+        if (!DuelManager.isInDuel(p)) {
+            p.getInventory().clear();
+            LobbyItems.give(p);
         }
     }
-}
 }

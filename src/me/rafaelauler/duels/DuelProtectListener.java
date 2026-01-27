@@ -28,13 +28,32 @@ public class DuelProtectListener implements Listener {
             }
         }
     }
+    @EventHandler
+    public void onClick(InventoryClickEvent e) {
 
+        if (!e.getView().getTitle().equals(StatsGUI.TITLE)) return;
+        e.setCancelled(true);
+    }
     // Bloquear teleport externo
     @EventHandler
     public void onTeleport(PlayerTeleportEvent e) {
-        if (DuelManager.isInDuel(e.getPlayer())) {
-            e.setCancelled(true);
-            e.getPlayer().sendMessage("§cVocê não pode teleportar durante um duelo!");
+
+        Player p = e.getPlayer();
+
+        if (!DuelManager.isInDuel(p)) return;
+
+        switch (e.getCause()) {
+
+            case COMMAND:
+            case ENDER_PEARL:
+            case SPECTATE:
+                e.setCancelled(true);
+                p.sendMessage("§cVocê não pode teleportar durante um duelo!");
+                break;
+
+            default:
+                // PLUGIN, RESPAWN, UNKNOWN, NETHER_PORTAL, etc → libera
+                break;
         }
     }
 

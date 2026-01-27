@@ -10,7 +10,7 @@ public class DenyCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
-        if (!(sender instanceof Player)) return false;
+        if (!(sender instanceof Player)) return true;
         Player target = (Player) sender;
 
         if (!ChallengeManager.hasChallenge(target)) {
@@ -18,14 +18,7 @@ public class DenyCommand implements CommandExecutor {
             return true;
         }
 
-        Player challenger = ChallengeManager.getChallenger(target);
         ChallengeManager.deny(target);
-
-        if (challenger != null) {
-            challenger.sendMessage("§c" + target.getName() + " recusou seu desafio.");
-        }
-
-        target.sendMessage("§aDesafio recusado.");
         return true;
     }
 }

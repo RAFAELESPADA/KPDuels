@@ -16,5 +16,7 @@ commands:
   setschematic:
   saveschematic:
     description: Salva a seleção atual do WorldEdit como schematic
-    usage: /saveschematic <nome>      
+    usage: /saveschematic <nome>
+  listarenas:
+          
   

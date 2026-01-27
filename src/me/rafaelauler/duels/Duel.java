@@ -5,7 +5,9 @@ import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 
 public class Duel {
+	  private static MySQLManager mysql;
 
+	    public static void setMySQL(MySQLManager manager) { mysql = manager; }
     private final Player p1;
     private final Player p2;
     private final Arena arena;
@@ -17,12 +19,17 @@ public class Duel {
         this.p2 = p2;
         this.arena = arena;
         this.kit = kit;
-        start();
+        this.state = DuelState.STARTING;
     }
 
-    private void start() {
-        state = DuelState.STARTING;
-
+    public boolean start() {
+        if (arena == null) {
+            p1.sendMessage("§cNão há arenas disponíveis no momento.");
+            p2.sendMessage("§cNão há arenas disponíveis no momento.");
+            return false;
+        }
+        if (arena.isInUse()) return false;
+        arena.setInUse(true);
         arena.teleport(p1, p2);
 
         preparePlayer(p1);
@@ -35,22 +42,51 @@ public class Duel {
 
         p1.sendMessage("§aDuelo iniciado contra §f" + p2.getName());
         p2.sendMessage("§aDuelo iniciado contra §f" + p1.getName());
+        System.out.println("[DUEL] iniciado em " + arena.getName());
+        return true;
     }
+
 
     public void end(Player winner) {
         if (state == DuelState.ENDED) return;
         state = DuelState.ENDED;
 
-        Player loser = getOpponent(winner);
+        Player loser = winner != null ? getOpponent(winner) : null;
 
-        winner.sendMessage("§aVocê venceu o duelo!");
-        loser.sendMessage("§cVocê perdeu o duelo!");
+        // Atualiza stats
+        if (mysql != null && winner != null && loser != null) {
+            try {
+                if (!mysql.isConnected()) mysql.connect();
+
+                PlayerStats win = mysql.getStats(winner.getUniqueId());
+                PlayerStats lose = mysql.getStats(loser.getUniqueId());
+
+                win.addWin();           // ✅ aumenta vitórias
+                lose.addLoss();         // ✅ aumenta derrotas
+                lose.resetWinstreak();  // ✅ zera streak do perdedor
+
+                mysql.saveStats(win);   // ✅ salva no banco
+                mysql.saveStats(lose);  // ✅ salva no banco
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // Limpeza
+        DuelManager.getBoxinghits().remove(p1.getUniqueId());
+        DuelManager.getBoxinghits().remove(p2.getUniqueId());
+
+        if (arena != null) ArenaManager.release(arena);
 
         resetPlayer(winner);
-        resetPlayer(loser);
-
-        arena.release(); // libera arena
+     
+        DuelManager.remove(p1);
+        DuelManager.remove(p2);
     }
+
+
+
 
     public Player[] getPlayers() { return new Player[]{p1, p2}; }
 
@@ -66,7 +102,8 @@ public class Duel {
 
     private void resetPlayer(Player p) {
         preparePlayer(p);
-        p.teleport(Bukkit.getWorld("world").getSpawnLocation());
+        LobbyItems.give(p);
+        p.teleport(Bukkit.getWorld("duels").getSpawnLocation());
     }
 
     public boolean hasPlayer(Player p) { return p.equals(p1) || p.equals(p2); }
@@ -74,6 +111,9 @@ public class Duel {
     public Player getOpponent(Player p) { return p.equals(p1) ? p2 : p1; }
 
     public Player getP1() { return p1; }
+    public Arena getArena() {
+        return arena;
+    }
     public Player getP2() { return p2; }
     public KitType getKit() { return kit; }
     public DuelState getState() { return state; }

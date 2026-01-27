@@ -19,7 +19,7 @@ public class AcceptCommand implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            target.sendMessage("§cSelecione um kit!");
+            target.sendMessage("§cUse: /accept <kit>");
             return true;
         }
 
@@ -32,21 +32,41 @@ public class AcceptCommand implements CommandExecutor {
         }
 
         Player challenger = ChallengeManager.getChallenger(target);
-        ChallengeManager.cancelSelecting(target);
+
+        // Limpa desafio + timeout
+        ChallengeManager.clear(target);
 
         if (challenger == null) {
             target.sendMessage("§cO jogador não está mais online.");
             return true;
         }
 
-        Duel duel = new Duel(
-                challenger,
-                target,
-                ArenaManager.get(),
-                kit
-        );
+        // Segurança extra
+        if (DuelManager.isInDuel(challenger) || DuelManager.isInDuel(target)) {
+            target.sendMessage("§cAlguém já está em um duelo.");
+            return true;
+        }
 
+        Arena arena = ArenaManager.getFreeArena(kit);
+        if (arena == null) {
+            target.sendMessage("§cNenhuma arena disponível.");
+            challenger.sendMessage("§cNenhuma arena disponível.");
+            return true;
+        }
+
+     // Adiciona antes de start para que listeners reconheçam o jogador
+        Duel duel = new Duel(challenger, target, arena, kit);
         DuelManager.add(duel);
+
+        if (!duel.start()) {
+            // Se start falhar, remove do manager e libera arena
+            DuelManager.forceEnd(challenger); // isso chama end(null) e reset dos dois jogadores
+            ArenaManager.release(arena);
+            return true;
+        }
+
+        ChallengeManager.resetCooldown(challenger);
+
         return true;
     }
 }
