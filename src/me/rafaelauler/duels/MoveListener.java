@@ -58,7 +58,7 @@ public class MoveListener implements Listener {
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
-
+if (e.getFrom().equals(Bukkit.getWorld("duels"))) {
         // se estava em duelo, termina
         Duel duel = DuelManager.get(p);
         if (duel != null) {
@@ -70,5 +70,6 @@ public class MoveListener implements Listener {
             p.getInventory().clear();
             LobbyItems.give(p);
         }
+}
     }
 }
