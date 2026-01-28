@@ -3,6 +3,7 @@ package me.rafaelauler.duels;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -69,6 +70,12 @@ public class DuelGUIListener implements Listener {
 
                 p.closeInventory();
                 break;
+            case COBBLESTONE:
+                QueueManager.join(p, KitType.BUILD);
+                
+
+                p.closeInventory();
+                break;
 
             case BARRIER:
                 QueueManager.leave(p);
@@ -89,9 +96,11 @@ public class DuelGUIListener implements Listener {
 
     @EventHandler
     public void onDeath(PlayerDeathEvent e) {
+
         Player dead = e.getEntity();
         Duel duel = DuelManager.get(dead);
 
+        if (DuelsCommand.game.contains(dead.getName())) {
         e.setDeathMessage(null);
         e.getDrops().clear();
         e.setDroppedExp(0);
@@ -100,7 +109,10 @@ public class DuelGUIListener implements Listener {
 
         Player winner = duel.getOpponent(dead);
         DuelManager.end(winner); // passe o duelo explicitamente
-
+        if (DuelProtectListener.BLOCK.keySet() != null) {
+        	for (Block b : DuelProtectListener.BLOCK.keySet()) {
+        		b.setType(Material.AIR);
+        	}
         LobbyItems.give(dead);
         
         Bukkit.getScheduler().runTaskLater(DuelPlugin.getPlugin(DuelPlugin.class), () -> {
@@ -109,6 +121,7 @@ public class DuelGUIListener implements Listener {
 
 
         }, 50L);
+        }}
     }
 
 
@@ -117,6 +130,7 @@ public class DuelGUIListener implements Listener {
     public void onRespawn(PlayerRespawnEvent e) {
         Player p = e.getPlayer();
 
+        if (DuelsCommand.game.contains(p.getName())) {
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -127,6 +141,7 @@ public class DuelGUIListener implements Listener {
                 }
             }
         }.runTaskLater(DuelPlugin.getPlugin(DuelPlugin.class), 40L);
+    }
     }
 
     /* ======================= QUIT ======================= */
@@ -145,7 +160,12 @@ public class DuelGUIListener implements Listener {
         if (duel == null) return;
 
         Player winner = duel.getOpponent(p);
+        if (DuelProtectListener.BLOCK.keySet() != null) {
+        	for (Block b : DuelProtectListener.BLOCK.keySet()) {
+        		b.setType(Material.AIR);
+        	}
         DuelManager.end(winner);
+    }
     }
 
 
@@ -192,12 +212,14 @@ public class DuelGUIListener implements Listener {
         if (!ChallengeManager.isSelecting(challenger)) return;
         if (!(e.getRightClicked() instanceof Player)) return;
 
+        if (DuelManager.isInDuel(challenger))  return;
         e.setCancelled(true);
 
         Player target = (Player) e.getRightClicked();
         ChallengeManager.challenge(challenger, target);
         ChallengeChat.sendChallenge(challenger, target, KitType.SOUP);
     }
+    
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
@@ -266,7 +288,7 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         if (e.getFrom().getName().equalsIgnoreCase("duels")) {
-
+            QueueManager.leave(e.getPlayer());
             DuelsCommand.game.remove(e.getPlayer().getName());
         }
     }

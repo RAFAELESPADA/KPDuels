@@ -1,6 +1,13 @@
 package me.rafaelauler.duels;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,6 +22,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class DuelProtectListener implements Listener {
 
+    public static final Map<Block, UUID> BLOCK = new HashMap<>();
     // Bloquear comandos enquanto estiver em duelo
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent e) {
@@ -78,6 +86,17 @@ public class DuelProtectListener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
         if (DuelManager.isInDuel(e.getPlayer())) {
+        	Duel duel = DuelManager.get(e.getPlayer());
+        	if (duel.getKit() == KitType.BUILD) {
+        	BLOCK.put(e.getBlock(), UUID.randomUUID());
+                Bukkit.getScheduler().runTaskLater(DuelPlugin.getPlugin(DuelPlugin.class), () -> {
+if (BLOCK.keySet() != null) {
+                	for (Block b : BLOCK.keySet()) {
+                		b.setType(Material.AIR);
+                	}
+}}, 600L);
+                return;
+        	}
             e.setCancelled(true);
         }
     }
@@ -85,6 +104,13 @@ public class DuelProtectListener implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
         if (DuelManager.isInDuel(e.getPlayer())) {
+
+        	Duel duel = DuelManager.get(e.getPlayer());
+        	if (duel.getKit() == KitType.BUILD) {
+        		if (BLOCK.containsKey(e.getBlock())) {
+        			return;
+        		}
+        	}
             e.setCancelled(true);
         }
     }

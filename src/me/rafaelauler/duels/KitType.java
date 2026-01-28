@@ -10,6 +10,8 @@ public enum KitType {
     SUMO("Sumo", Material.IRON_CHESTPLATE),
     UHC("UHC", Material.DIAMOND_SWORD),
     BOXING("Boxing", Material.GOLD_SWORD),
+
+    BUILD("Build", Material.COBBLESTONE),
 	SOUP("Soup", Material.MUSHROOM_SOUP);
     private final String display;
     private final Material icon;
@@ -68,12 +70,40 @@ public enum KitType {
             	p.getInventory().setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS));
                 p.getInventory().addItem(
                         new ItemStack(Material.DIAMOND_SWORD),
-                        new ItemStack(Material.GOLDEN_APPLE, 3)
+                        new ItemStack(Material.GOLDEN_APPLE, 3),
+                        new ItemStack(Material.GOLDEN_APPLE, (short) 1)
                 );
-                new ItemStack(Material.BOW);
-                new ItemStack(Material.ARROW, 24);
+                p.getInventory().addItem(new ItemStack(Material.BOW));
+                p.getInventory().addItem( new ItemStack(Material.ARROW, 25));
                 break;
+            case BUILD:
+            	p.getInventory().setChestplate(new ItemStack(Material.DIAMOND_CHESTPLATE));
 
+            	p.getInventory().setHelmet(new ItemStack(Material.IRON_HELMET));
+
+            	p.getInventory().setBoots(new ItemStack(Material.IRON_BOOTS));
+
+            	p.getInventory().setLeggings(new ItemStack(Material.DIAMOND_LEGGINGS));
+                p.getInventory().addItem(
+                        new ItemStack(Material.IRON_SWORD),
+                        new ItemStack(Material.GOLDEN_APPLE, 3),
+                        new ItemStack(Material.WOOD, 64),
+
+                        new ItemStack(Material.COBBLESTONE, 64),
+
+                        new ItemStack(Material.LOG, 64),
+                        new ItemStack(Material.IRON_AXE),
+                        new ItemStack(Material.IRON_PICKAXE),
+                        new ItemStack(Material.GLASS, 64),
+                        new ItemStack(Material.STONE, 64),
+                        new ItemStack(Material.DIRT, 64),
+
+                        new ItemStack(Material.COBBLE_WALL, 64),
+                        new ItemStack(Material.GOLDEN_APPLE, (short) 1)
+                );
+                p.getInventory().addItem(new ItemStack(Material.BOW));
+                p.getInventory().addItem( new ItemStack(Material.ARROW, 8));
+                break;
             case BOXING:
                 ItemStack i = 
                         new ItemStack(Material.DIAMOND_SWORD);

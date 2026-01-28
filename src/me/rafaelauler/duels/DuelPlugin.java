@@ -4,11 +4,13 @@ package me.rafaelauler.duels;
 import java.sql.SQLException;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 
 
 public class DuelPlugin extends JavaPlugin {
-	public static MySQLManager my = new MySQLManager("sp-17.magnohost.com.br", 3306, "s4285_geral2", "u42852_7AnXHikZc5", "xzk9DZo!+0G3QYMUUQSx5mGp");
+	public static MySQLManager my = new MySQLManager("host", 3306, "db", "user", "senha");
     @Override
     public void onEnable() {
 
@@ -57,7 +59,13 @@ public void onDisable() {
 			e.printStackTrace();
 		}
 	}DuelManager.getAllDuels().forEach(d -> DuelManager.forceEnd(d.getP1()));
-
+	if (DuelProtectListener.BLOCK.values() != null) {
+for (Block b : DuelProtectListener.BLOCK.keySet()) {
+	if (b != null) {
+		b.setType(Material.AIR);
+	}
+}
+	}
     getLogger().info("Duels plugin desativado!");
 }
 }

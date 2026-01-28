@@ -28,7 +28,12 @@ public class Duel {
             p2.sendMessage("§cNão há arenas disponíveis no momento.");
             return false;
         }
-        if (arena.isInUse()) return false;
+        if (arena.isInUse()) { 
+
+        p1.sendMessage("§cTodas as arenas estão ocupadas. Tente novamente mais tarde...");
+        p2.sendMessage("§cTodas as arenas estão ocupadas. Tente novamente mais tarde...");
+        return false;
+        }
         arena.setInUse(true);
         arena.teleport(p1, p2);
 

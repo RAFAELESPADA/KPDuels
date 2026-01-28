@@ -39,7 +39,13 @@ public class DuelGUI {
     public static void update(Player p, Inventory inv) {
 
         fill(inv);
-
+        inv.setItem(9, kitItem(
+                p,
+                KitType.BUILD,
+                Material.COBBLESTONE,
+                "§aBuild",
+                "§7Batalha com o BUILD ativado!"
+        ));
         inv.setItem(11, kitItem(
                 p,
                 KitType.SUMO,

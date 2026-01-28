@@ -9,7 +9,7 @@
 	<classpathentry exported="true" kind="lib" path="C:/Users/Home/Downloads/spigot-api-1.12-R0.1-20170803.111256-74.jar"/>
 	<classpathentry exported="true" kind="lib" path="C:/Users/Home/Desktop/SKYZERMC BACKUP GERAL/LOBBY/plugins/KP-CORE-v4.0.5.jar"/>
 	<classpathentry exported="true" kind="lib" path="C:/Users/Home/Downloads/BungeeCord.jar"/>
-	<classpathentry exported="true" kind="lib" path="C:/Users/Home/Desktop/SKYZERMC BACKUP GERAL/RANKUP/plugins/worldedit-bukkit-6.1.9.jar"/>
 	<classpathentry exported="true" kind="lib" path="C:/Users/Home/Desktop/SKYZERMC BACKUP GERAL/RANKUP/plugins/PlaceholderAPI-2.11.6.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/Home/Desktop/SKYZERMC BACKUP GERAL/RANKUP/plugins/worldedit-bukkit-6.1.9.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
