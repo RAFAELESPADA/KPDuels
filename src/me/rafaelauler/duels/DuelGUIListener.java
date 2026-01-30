@@ -1,5 +1,7 @@
 package me.rafaelauler.duels;
 
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -14,6 +16,8 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -146,26 +150,58 @@ public class DuelGUIListener implements Listener {
 
     /* ======================= QUIT ======================= */
 
+
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
-
         Player p = e.getPlayer();
+        UUID uuid = p.getUniqueId();
 
-        DuelManager.getBoxinghits().remove(p.getUniqueId());
-        DuelsCommand.game.remove(p.getName());
+        // Limpeza geral
+        DuelManager.getBoxinghits().remove(uuid);
         QueueManager.leave(p);
-        ClickCooldown.remove(p.getUniqueId());
+        ClickCooldown.remove(uuid);
+        DuelsCommand.game.remove(p.getName());
 
+        // Encerra duelo se existir
         Duel duel = DuelManager.get(p);
-        if (duel == null) return;
+        if (duel != null) {
+            DuelManager.forceEnd(p);
+        }
 
-        Player winner = duel.getOpponent(p);
-        if (DuelProtectListener.BLOCK.keySet() != null) {
-        	for (Block b : DuelProtectListener.BLOCK.keySet()) {
-        		b.setType(Material.AIR);
-        	}
-        DuelManager.end(winner);
+        // 🔥 Salva stats async
+        Bukkit.getScheduler().runTaskAsynchronously(
+            DuelPlugin.getInstance(), () -> {
+
+                PlayerStats stats = PlayerStatsCache.get(uuid);
+
+                if (stats == null) {
+                    stats = DuelPlugin.getInstance()
+                            .getMySQL()
+                            .getStats(uuid);
+                }
+
+                if (stats != null) {
+                    DuelPlugin.getInstance()
+                            .getMySQL()
+                            .saveStats(stats);
+                }
+                if (stats != null) {
+                    Bukkit.getScheduler().runTaskAsynchronously(
+                        DuelPlugin.getInstance(),
+                        new StatsSaveTask(stats)
+                    );
+                    if (stats != null) {
+                        StatsSaveQueue.enqueue(stats);
+                        StatsSaveService.enqueue(stats);
+                    }
+                PlayerStatsCache.remove(uuid);
+            }
+            }
+        );
     }
+    @EventHandler
+    public void onKick(PlayerKickEvent e) {
+        onQuit(new PlayerQuitEvent(e.getPlayer(), e.getLeaveMessage()));
     }
 
 
@@ -188,17 +224,6 @@ public class DuelGUIListener implements Listener {
             Bukkit.getLogger().info("[Duels] Arenas carregadas após WorldLoadEvent.");
 
         }, 1L);
-    }
-
-    @EventHandler
-    public void onQtit(PlayerQuitEvent e) {
-        Player p = e.getPlayer();
-        Duel duel = DuelManager.get(p);
-
-        if (duel == null) return;
-
-        DuelManager.forceEnd(p);
-
     }
 
     /* ======================= INTERAÇÕES ======================= */
@@ -266,9 +291,24 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
             LobbyItems.give(p);
         }
     }
+    
 
     /* ======================= DROP ======================= */
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        Player p = e.getPlayer();
 
+        Bukkit.getScheduler().runTaskAsynchronously(
+            DuelPlugin.getInstance(),
+            () -> {
+                PlayerStats stats = DuelPlugin.getInstance()
+                    .getMySQL()
+                    .getStats(p.getUniqueId());
+
+                StatsCache.put(stats);
+            }
+        );
+    }
     @EventHandler
     public void onDrop(PlayerDropItemEvent e) {
 

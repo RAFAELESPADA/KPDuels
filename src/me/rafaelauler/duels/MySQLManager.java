@@ -1,104 +1,132 @@
 package me.rafaelauler.duels;
 
-
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.util.Consumer;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 public class MySQLManager {
 
-    private final String host, database, user, password;
-    private final int port;
-    private Connection connection;
+    private HikariDataSource dataSource;
 
-    public MySQLManager(String host, int port, String database, String user, String password) {
-        this.host = host;
-        this.port = port;
-        this.database = database;
-        this.user = user;
-        this.password = password;
+    public void loadStatsAsync(UUID uuid, Consumer<PlayerStats> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(DuelPlugin.getInstance(), () -> {
+            try {
+                PlayerStats stats = getStats(uuid);
+                PlayerStatsCache.put(stats);
+
+                Bukkit.getScheduler().runTask(DuelPlugin.getInstance(), () -> {
+                    callback.accept(stats);
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
-    // Conecta ao MySQL
-    public void connect() throws SQLException, ClassNotFoundException {
-        if (isConnected()) return;
-        Class.forName("com.mysql.cj.jdbc.Driver");
-// compatível 1.8.8
-        connection = DriverManager.getConnection(
-        		"jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC",
 
-                user,
-                password
+	public void connect(String host, int port, String database, String user, String password) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(
+            "jdbc:mysql://" + host + ":" + port + "/" + database +
+            "?useSSL=false&autoReconnect=true"
         );
-        createTable();
+        config.setUsername(user);
+        config.setPassword(password);
+
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+        config.setConnectionTimeout(30000);
+        config.setIdleTimeout(600000);
+        config.setMaxLifetime(1800000);
+
+        dataSource = new HikariDataSource(config);
     }
 
-    public boolean isConnected() {
-        try {
-            return connection != null && !connection.isClosed();
-        } catch (SQLException e) {
-            return false;
+    public void close() {
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
         }
     }
+    public void saveStatsBatch(Collection<PlayerStats> statsList) throws SQLException {
 
-    public void disconnect() throws SQLException {
-        if (isConnected()) connection.close();
+        if (statsList == null || statsList.isEmpty()) return;
+
+        String sql =
+            "INSERT INTO duels_stats (uuid, wins, losses, winstreak) " +
+            "VALUES (?, ?, ?, ?) " +
+            "ON DUPLICATE KEY UPDATE " +
+            "wins = VALUES(wins), " +
+            "losses = VALUES(losses), " +
+            "winstreak = VALUES(winstreak)";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            conn.setAutoCommit(false);
+
+            for (PlayerStats stats : statsList) {
+                ps.setString(1, stats.getUuid().toString());
+                ps.setInt(2, stats.getWins());
+                ps.setInt(3, stats.getLosses());
+                ps.setInt(4, stats.getWinstreak());
+                ps.addBatch();
+            }
+
+            ps.executeBatch();
+            conn.commit();
+        }
     }
+    public PlayerStats getStats(UUID uuid) {
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(
+                     "SELECT wins, losses, winstreak FROM duel_stats WHERE uuid=?")) {
 
-    public Connection getConnection() {
-        return connection;
-    }
-
-    // Cria tabela caso não exista
-    public void createTable() throws SQLException {
-        String sql = "CREATE TABLE IF NOT EXISTS duel_stats (" +
-                "uuid VARCHAR(36) PRIMARY KEY," +
-                "wins INT DEFAULT 0," +
-                "losses INT DEFAULT 0," +
-                "winstreak INT DEFAULT 0" +
-                ");";
-        getConnection().createStatement().execute(sql);
-    }
-
-    // Carrega stats de um jogador
-    public PlayerStats getStats(UUID uuid) throws SQLException {
-        PreparedStatement ps = getConnection().prepareStatement(
-                "SELECT * FROM duel_stats WHERE uuid=?"
-        );
-        ps.setString(1, uuid.toString());
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            return new PlayerStats(
-                    uuid,
-                    rs.getInt("wins"),
-                    rs.getInt("losses"),
-                    rs.getInt("winstreak")
-            );
-        } else {
-            // Cria registro se não existir
-            ps = getConnection().prepareStatement(
-                    "INSERT INTO duel_stats(uuid) VALUES(?)"
-            );
             ps.setString(1, uuid.toString());
-            ps.executeUpdate();
-            return new PlayerStats(uuid, 0, 0, 0);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return new PlayerStats(
+                        uuid,
+                        rs.getInt("wins"),
+                        rs.getInt("losses"),
+                        rs.getInt("winstreak")
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        return new PlayerStats(uuid, 0, 0, 0);
     }
 
-    // Salva stats de um jogador
-    public void saveStats(PlayerStats stats) throws SQLException {
-        PreparedStatement ps = getConnection().prepareStatement(
-                "UPDATE duel_stats SET wins=?, losses=?, winstreak=? WHERE uuid=?"
-        );
-        ps.setInt(1, stats.getWins());
-        ps.setInt(2, stats.getLosses());
-        ps.setInt(3, stats.getWinstreak());
-        ps.setString(4, stats.getUuid().toString());
-        ps.executeUpdate();
+    public void saveStats(PlayerStats stats) {
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(
+                     "INSERT INTO duel_stats (uuid, wins, losses, winstreak) VALUES (?,?,?,?) " +
+                     "ON DUPLICATE KEY UPDATE wins=?, losses=?, winstreak=?")) {
+
+            ps.setString(1, stats.getUuid().toString());
+            ps.setInt(2, stats.getWins());
+            ps.setInt(3, stats.getLosses());
+            ps.setInt(4, stats.getWinstreak());
+
+            ps.setInt(5, stats.getWins());
+            ps.setInt(6, stats.getLosses());
+            ps.setInt(7, stats.getWinstreak());
+
+            ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
-

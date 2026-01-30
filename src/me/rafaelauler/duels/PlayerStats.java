@@ -8,6 +8,16 @@ public class PlayerStats {
     private int wins;
     private int losses;
     private int winstreak;
+    private transient int saveAttempts = 0;
+
+    public int incrementSaveAttempts() {
+        return ++saveAttempts;
+    }
+
+
+
+    /* ================= CORE ================= */
+
 
     public PlayerStats(UUID uuid, int wins, int losses, int winstreak) {
         this.uuid = uuid;
@@ -15,7 +25,17 @@ public class PlayerStats {
         this.losses = losses;
         this.winstreak = winstreak;
     }
+    public int getSaveAttempts() {
+        return saveAttempts;
+    }
 
+    public void setSaveAttempts(int attempts) {
+        this.saveAttempts = attempts;
+    }
+
+    public void resetSaveAttempts() {
+        this.saveAttempts = 0;
+    }
     public UUID getUuid() { return uuid; }
     public int getWins() { return wins; }
     public int getLosses() { return losses; }
