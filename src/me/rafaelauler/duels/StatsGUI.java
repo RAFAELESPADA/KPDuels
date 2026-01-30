@@ -25,7 +25,13 @@ public class StatsGUI {
         updateCached(p, inv);
         startUpdateTask(p, inv);
     }
+    public static void refreshIfOpen(Player p, PlayerStats stats) {
+        if (!p.isOnline()) return;
 
+        if (!p.getOpenInventory().getTitle().equals(TITLE)) return;
+
+        updateInventory(p.getOpenInventory().getTopInventory(), stats);
+    }
     private static void updateCached(Player p, Inventory inv) {
         PlayerStats cached = PlayerStatsCache.get(p.getUniqueId());
 

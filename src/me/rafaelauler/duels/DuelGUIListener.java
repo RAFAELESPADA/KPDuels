@@ -298,6 +298,7 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
 
+       
         Bukkit.getScheduler().runTaskAsynchronously(
             DuelPlugin.getInstance(),
             () -> {
@@ -308,7 +309,41 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
                 StatsCache.put(stats);
             }
         );
+        PlayerStats win = PlayerStatsCache.get(p.getUniqueId());
+
+        StatsSaveQueue.enqueue(win);
     }
+    @EventHandler
+    public void onJoin2(PlayerJoinEvent e) {
+        var player = e.getPlayer();
+
+        // 🔥 Evita recarregar se já estiver no cache
+        if (PlayerStatsCache.get(player.getUniqueId()) != null) {
+            return;
+        }
+
+        // 🔥 Carrega ASYNC
+        Bukkit.getScheduler().runTaskAsynchronously(
+            DuelPlugin.getInstance(),
+            () -> loadStats(player)
+        );
+    }
+
+    private void loadStats(org.bukkit.entity.Player p) {
+        PlayerStats stats = DuelPlugin.getMy().getStats(p.getUniqueId());
+
+        if (stats == null) {
+            stats = new PlayerStats(p.getUniqueId(), 0, 0, 0);
+        }
+        else {
+        stats = new PlayerStats(p.getUniqueId(), stats.getWins(), stats.getLosses(), stats.getWinstreak());
+        }
+        // 🔥 Coloca no cache
+        PlayerStatsCache.put(stats);
+
+    
+    
+}
     @EventHandler
     public void onDrop(PlayerDropItemEvent e) {
 

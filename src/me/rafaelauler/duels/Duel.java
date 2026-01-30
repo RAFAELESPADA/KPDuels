@@ -86,22 +86,36 @@ public class Duel {
 
         if (win == null) {
             win = mysql.getStats(winner.getUniqueId());
+            PlayerStatsCache.put(win);
         }
 
         if (lose == null) {
             lose = mysql.getStats(loser.getUniqueId());
+            PlayerStatsCache.put(lose);
         }
 
+        // 🔥 Atualiza SOMENTE EM MEMÓRIA
         win.addWin();
         lose.addLoss();
         lose.resetWinstreak();
 
-        mysql.saveStats(win);
-        mysql.saveStats(lose);
+        // 🔥 Marca para persistência
 
-        PlayerStatsCache.put(win);
-        PlayerStatsCache.put(lose);
+        StatsSaveQueue.enqueue(win);
+        StatsSaveQueue.enqueue(lose);
+        Bukkit.getScheduler().runTask(
+        	    DuelPlugin.getInstance(),
+        	    () -> {
+        	        if (winner.isOnline()) {
+        	            Bukkit.dispatchCommand(
+        	                Bukkit.getConsoleSender(),
+        	                "tab reload"
+        	            );
+        	        }
+        	    }
+        	);
     }
+
     private void resetPlayers(Player winner, Player loser) {
         if (winner != null && winner.isOnline()) {
             resetPlayer(winner);

@@ -31,7 +31,12 @@ public class DuelPlaceHolder extends PlaceholderExpansion {
     public String onPlaceholderRequest(Player p, String identifier) {
         if (p == null) return "";
 
-        PlayerStats stats = StatsCache.get(p.getUniqueId());
+        PlayerStats stats = PlayerStatsCache.get(p.getUniqueId());
+
+        // 🔥 CACHE AINDA NÃO CARREGOU
+        if (stats == null) {
+            return "§7...";
+        }
 
         switch (identifier.toLowerCase()) {
 
@@ -69,16 +74,16 @@ public class DuelPlaceHolder extends PlaceholderExpansion {
                 return DuelManager.isInDuel(p)
                         ? DuelManager.get(p).getState().name()
                         : "Nenhum";
+
             case "emduelo":
                 return String.valueOf(
-                    DuelManager.getAllDuels().stream()
-                        .mapToInt(d -> d.getPlayers().length)
-                        .sum()
+                    DuelManager.getAllDuels().size() * 2
                 );
         }
-            
+
         return "";
-    
     }
+
+
 }
 
