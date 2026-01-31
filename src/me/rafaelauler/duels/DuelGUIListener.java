@@ -17,7 +17,6 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.world.WorldLoadEvent;
@@ -153,55 +152,22 @@ public class DuelGUIListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
-        Player p = e.getPlayer();
-        UUID uuid = p.getUniqueId();
+        UUID uuid = e.getPlayer().getUniqueId();
 
-        // Limpeza geral
         DuelManager.getBoxinghits().remove(uuid);
-        QueueManager.leave(p);
+        QueueManager.leave(e.getPlayer());
         ClickCooldown.remove(uuid);
-        DuelsCommand.game.remove(p.getName());
+        DuelsCommand.game.remove(e.getPlayer().getName());
 
-        // Encerra duelo se existir
-        Duel duel = DuelManager.get(p);
+        Duel duel = DuelManager.get(e.getPlayer());
         if (duel != null) {
-            DuelManager.forceEnd(p);
+            DuelManager.forceEnd(e.getPlayer());
         }
 
-        // 🔥 Salva stats async
-        Bukkit.getScheduler().runTaskAsynchronously(
-            DuelPlugin.getInstance(), () -> {
-
-                PlayerStats stats = PlayerStatsCache.get(uuid);
-
-                if (stats == null) {
-                    stats = DuelPlugin.getInstance()
-                            .getMySQL()
-                            .getStats(uuid);
-                }
-
-                if (stats != null) {
-                    DuelPlugin.getInstance()
-                            .getMySQL()
-                            .saveStats(stats);
-                }
-                if (stats != null) {
-                    Bukkit.getScheduler().runTaskAsynchronously(
-                        DuelPlugin.getInstance(),
-                        new StatsSaveTask(stats)
-                    );
-                    if (stats != null) {
-                        StatsSaveQueue.enqueue(stats);
-                        StatsSaveService.enqueue(stats);
-                    }
-                PlayerStatsCache.remove(uuid);
-            }
-            }
-        );
-    }
-    @EventHandler
-    public void onKick(PlayerKickEvent e) {
-        onQuit(new PlayerQuitEvent(e.getPlayer(), e.getLeaveMessage()));
+        PlayerStats stats = PlayerStatsCache.get(uuid);
+        if (stats != null && stats.isDirty()) {
+            StatsSaveQueue.enqueue(stats);
+        }
     }
 
 
@@ -296,54 +262,16 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
     /* ======================= DROP ======================= */
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        Player p = e.getPlayer();
-
+        UUID uuid = e.getPlayer().getUniqueId();
+        PlayerStatsCache.touch(uuid);
+        if (PlayerStatsCache.contains(uuid)) return;
        
-        Bukkit.getScheduler().runTaskAsynchronously(
-            DuelPlugin.getInstance(),
-            () -> {
-                PlayerStats stats = DuelPlugin.getInstance()
-                    .getMySQL()
-                    .getStats(p.getUniqueId());
-
-                StatsCache.put(stats);
-            }
-        );
-        PlayerStats win = PlayerStatsCache.get(p.getUniqueId());
-
-        StatsSaveQueue.enqueue(win);
-    }
-    @EventHandler
-    public void onJoin2(PlayerJoinEvent e) {
-        var player = e.getPlayer();
-
-        // 🔥 Evita recarregar se já estiver no cache
-        if (PlayerStatsCache.get(player.getUniqueId()) != null) {
-            return;
-        }
-
-        // 🔥 Carrega ASYNC
-        Bukkit.getScheduler().runTaskAsynchronously(
-            DuelPlugin.getInstance(),
-            () -> loadStats(player)
-        );
+        DuelPlugin.getMy().loadStatsAsync(uuid, stats -> {
+            // cache já foi populado
+        });
     }
 
-    private void loadStats(org.bukkit.entity.Player p) {
-        PlayerStats stats = DuelPlugin.getMy().getStats(p.getUniqueId());
-
-        if (stats == null) {
-            stats = new PlayerStats(p.getUniqueId(), 0, 0, 0);
-        }
-        else {
-        stats = new PlayerStats(p.getUniqueId(), stats.getWins(), stats.getLosses(), stats.getWinstreak());
-        }
-        // 🔥 Coloca no cache
-        PlayerStatsCache.put(stats);
-
     
-    
-}
     @EventHandler
     public void onDrop(PlayerDropItemEvent e) {
 

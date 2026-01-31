@@ -31,7 +31,6 @@ public class DuelPlugin extends JavaPlugin {
                 getConfig().getString("mysql.user"),
                 getConfig().getString("mysql.password"));
         Duel.setMySQL(getMy());
-        StatsSaveService.start();
         // Eventos
         Bukkit.getPluginManager().registerEvents(new DamageListener(), this);
         Bukkit.getPluginManager().registerEvents(new DeathListener(), this);
@@ -55,24 +54,22 @@ public class DuelPlugin extends JavaPlugin {
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new DuelPlaceHolder().register();
         }
+        StatsSaveService.start();
+
         Bukkit.getScheduler().runTaskTimerAsynchronously(
-        	    this,
-        	    PlayerStatsCache::cleanup,
-        	    20L * 60,
-        	    20L * 60
-        	);
+            this,
+            new StatsBatchWorker(),
+            20L * 5,
+            20L * 5
+        );
+
         Bukkit.getScheduler().runTaskTimerAsynchronously(
-        	    this,
-        	    new StatsSaveWorker(),
-        	    20L,
-        	    20L
-        	);
-        Bukkit.getScheduler().runTaskTimerAsynchronously(
-        	    this,
-        	    new StatsBatchSaveWorker(),
-        	    20L,
-        	    20L
-        	);
+            this,
+            PlayerStatsCache::cleanup,
+            20L * 60,
+            20L * 60
+        );
+        
         ChallengeManager.init(this);
 
         getLogger().info("§aDuels plugin ativado com sucesso!");
@@ -83,25 +80,28 @@ public class DuelPlugin extends JavaPlugin {
 
         getLogger().info("Salvando stats em cache...");
 
-        if (my != null) {
-            try {
-                int count = PlayerStatsCache.getAll().size();
+        
+        	 getLogger().info("[Duels] Flush final de stats...");
 
-                for (PlayerStats stats : PlayerStatsCache.getAll()) {
-                    my.saveStats(stats);
-                }
+        	    try {
+        	        // 1️⃣ Enfileira tudo que ainda está sujo
+        	        PlayerStatsCache.getAll().stream()
+        	            .filter(PlayerStats::isDirty)
+        	            .forEach(StatsSaveQueue::enqueue);
 
-                PlayerStatsCache.clear();
-                getLogger().info("Salvos " + count + " stats no MySQL.");
+        	        // 2️⃣ Para schedulers
+        	        Bukkit.getScheduler().cancelTasks(this);
 
-            } catch (Exception e) {
-                getLogger().severe("Erro ao salvar stats!");
-                e.printStackTrace();
-            } finally {
-            	Bukkit.getScheduler().cancelTasks(this);
-                my.close(); // fecha HikariCP
-            }
-        }
+        	        // 3️⃣ Flush bloqueante
+        	        StatsSaveService.shutdownAndFlush();
+
+        	    } catch (Exception e) {
+        	        getLogger().severe("Erro no flush final!");
+        	        e.printStackTrace();
+        	    } finally {
+        	        if (my != null) my.close();
+        	    }
+        
 
         // Encerra duelos
         DuelManager.getAllDuels()
@@ -113,13 +113,7 @@ public class DuelPlugin extends JavaPlugin {
                 if (b != null) b.setType(Material.AIR);
             });
         }
-        getLogger().info("Flush final de stats...");
-
-        for (PlayerStats stats : PlayerStatsCache.getAll()) {
-            StatsSaveQueue.enqueue(stats);
-        }
-        StatsSaveService.shutdownAndFlush();
-        new StatsSaveWorker().run();
+        getLogger().info("Flush final de stats completo");
         getLogger().info("§cDuels plugin desativado!");
     }
 

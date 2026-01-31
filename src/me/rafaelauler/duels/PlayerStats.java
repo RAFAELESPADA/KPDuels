@@ -9,7 +9,7 @@ public class PlayerStats {
     private int losses;
     private int winstreak;
     private transient int saveAttempts = 0;
-
+    private volatile boolean dirty;
     public int incrementSaveAttempts() {
         return ++saveAttempts;
     }
@@ -41,8 +41,17 @@ public class PlayerStats {
     public int getLosses() { return losses; }
     public int getWinstreak() { return winstreak; }
 
-    public void addWin() { wins++; winstreak++; }
-    public void addLoss() { losses++; winstreak = 0; }
-    public void resetWinstreak() { winstreak = 0; }
+    public void addWin() { wins++; winstreak++;  dirty = true; }
+    public void addLoss() { losses++; winstreak = 0;   dirty = true; }
+    public void resetWinstreak() { winstreak = 0 ;  dirty = true; }
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    public void markClean() {
+        dirty = false;
+    }
+
+
 }
 

@@ -33,23 +33,20 @@ public class DuelPlaceHolder extends PlaceholderExpansion {
 
         PlayerStats stats = PlayerStatsCache.get(p.getUniqueId());
 
-        // 🔥 CACHE AINDA NÃO CARREGOU
+
         if (stats == null) {
-            return "§7...";
+            return "§7Carregando...";
         }
 
-        switch (identifier.toLowerCase()) {
-
+        switch (identifier) {
             case "wins":
+            	
                 return String.valueOf(stats.getWins());
-
             case "losses":
                 return String.valueOf(stats.getLosses());
-
             case "ws":
                 return String.valueOf(stats.getWinstreak());
-
-            case "opponent":
+        case "opponent":
                 if (DuelManager.isInDuel(p)) {
                     return DuelManager.get(p).getOpponent(p).getName();
                 }

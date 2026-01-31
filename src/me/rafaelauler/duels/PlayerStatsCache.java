@@ -1,63 +1,79 @@
 package me.rafaelauler.duels;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import org.bukkit.Bukkit;
 
 public class PlayerStatsCache {
 
-    private static final long TTL = 5 * 60 * 1000; // 5 minutos
     private static final Map<UUID, CacheEntry> CACHE = new ConcurrentHashMap<>();
+    private static final long TTL = 10 * 60 * 1000; // 10 min
 
-    /* ========================= */
-
-    public static void put(PlayerStats stats) {
-        CACHE.put(stats.getUuid(), new CacheEntry(stats, System.currentTimeMillis()));
-    }
-
+    // 🔥 SOMENTE GET — nunca cria
     public static PlayerStats get(UUID uuid) {
         CacheEntry entry = CACHE.get(uuid);
-
         if (entry == null) return null;
 
-        if (entry.isExpired()) {
-            CACHE.remove(uuid);
-            return null;
-        }
-
+        entry.touch();
         return entry.stats;
+    }
+
+    // 🔥 PUT explícito após load
+    public static void put(PlayerStats stats) {
+        CACHE.put(stats.getUuid(), new CacheEntry(stats));
+    }
+    public static void touch(UUID uuid) {
+        CacheEntry entry = CACHE.get(uuid);
+        if (entry != null) entry.touch();
+    }
+    public static boolean contains(UUID uuid) {
+        return CACHE.containsKey(uuid);
     }
 
     public static void remove(UUID uuid) {
         CACHE.remove(uuid);
     }
 
+    // 🔥 Usado SOMENTE no onDisable / batch save
     public static Collection<PlayerStats> getAll() {
         return CACHE.values()
             .stream()
             .map(e -> e.stats)
-            .toList();
+            .collect(Collectors.toList());
     }
 
-    public static void clear() {
-        CACHE.clear();
-    }
+    // 🔥 TTL seguro
     public static void cleanup() {
-        CACHE.entrySet().removeIf(e -> e.getValue().isExpired());
+        long now = System.currentTimeMillis();
+
+        CACHE.entrySet().removeIf(e -> {
+            UUID uuid = e.getKey();
+            CacheEntry entry = e.getValue();
+
+            // nunca remove player online
+            if (Bukkit.getPlayer(uuid) != null) return false;
+
+            return now - entry.lastAccess > TTL;
+        });
     }
+
     /* ========================= */
 
-    private static class CacheEntry {
+    private static final class CacheEntry {
         private final PlayerStats stats;
-        private final long lastAccess;
+        private volatile long lastAccess;
 
-        CacheEntry(PlayerStats stats, long lastAccess) {
+        CacheEntry(PlayerStats stats) {
             this.stats = stats;
-            this.lastAccess = lastAccess;
+            touch();
         }
 
-        boolean isExpired() {
-            return System.currentTimeMillis() - lastAccess > TTL;
+        void touch() {
+            lastAccess = System.currentTimeMillis();
         }
     }
 }

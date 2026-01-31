@@ -4,11 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.bukkit.Bukkit;
-import org.bukkit.util.Consumer;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -57,34 +57,34 @@ public class MySQLManager {
             dataSource.close();
         }
     }
-    public void saveStatsBatch(Collection<PlayerStats> statsList) throws SQLException {
+    public void saveStatsBatch(List<PlayerStats> batch) throws SQLException {
 
-        if (statsList == null || statsList.isEmpty()) return;
+        if (batch.isEmpty()) return;
 
         String sql =
-            "INSERT INTO duels_stats (uuid, wins, losses, winstreak) " +
+            "INSERT INTO duel_stats (uuid, wins, losses, winstreak) " +
             "VALUES (?, ?, ?, ?) " +
             "ON DUPLICATE KEY UPDATE " +
             "wins = VALUES(wins), " +
             "losses = VALUES(losses), " +
             "winstreak = VALUES(winstreak)";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
-            conn.setAutoCommit(false);
-
-            for (PlayerStats stats : statsList) {
-                ps.setString(1, stats.getUuid().toString());
-                ps.setInt(2, stats.getWins());
-                ps.setInt(3, stats.getLosses());
-                ps.setInt(4, stats.getWinstreak());
+            for (PlayerStats s : batch) {
+                ps.setString(1, s.getUuid().toString());
+                ps.setInt(2, s.getWins());
+                ps.setInt(3, s.getLosses());
+                ps.setInt(4, s.getWinstreak());
                 ps.addBatch();
             }
 
             ps.executeBatch();
-            conn.commit();
         }
+
+        // 🔥 marca todos como salvos
+        batch.forEach(PlayerStats::markClean);
     }
     public PlayerStats getStats(UUID uuid) {
         try (Connection con = dataSource.getConnection();

@@ -18,7 +18,9 @@ public class StatsSaveWorker implements Runnable {
     	    final PlayerStats toRetry = stats;
 
     	    int attempt = toRetry.getSaveAttempts();
-
+    	    if (!toRetry.isDirty()) {
+    	        continue;
+    	    }
     	    try {
     	        DuelPlugin.getInstance()
     	            .getMySQL()
@@ -28,20 +30,21 @@ public class StatsSaveWorker implements Runnable {
 
     	    } catch (Exception ex) {
 
-    	        Throwable cause = ex.getCause();
+    	    	boolean isSqlError =
+    	    		    ex instanceof SQLException ||
+    	    		    ex.getCause() instanceof SQLException;
 
-    	        if (!(cause instanceof SQLException)) {
-    	            Bukkit.getLogger().severe(
-    	                "[Duels] Erro NÃO SQL ao salvar stats de "
-    	                + toRetry.getUuid()
-    	            );
-    	            ex.printStackTrace();
-    	            continue;
-    	        }
+    	    		if (!isSqlError) {
+    	    		    Bukkit.getLogger().severe(
+    	    		        "[Duels] Erro NÃO SQL ao salvar stats de " + toRetry.getUuid()
+    	    		    );
+    	    		    ex.printStackTrace();
+    	    		    continue;
+    	    		}
 
     	        attempt++;
     	        toRetry.setSaveAttempts(attempt);
-
+    	        toRetry.markClean();
     	        if (attempt >= MAX_RETRIES) {
     	            Bukkit.getLogger().severe(
     	                "[Duels] ❌ Stats descartados para "
@@ -52,9 +55,9 @@ public class StatsSaveWorker implements Runnable {
     	        }
 
     	        long delay = Math.min(
-    	            (long) Math.pow(2, attempt) * 20L,
-    	            MAX_DELAY_TICKS
-    	        );
+    	        	    (1L << attempt) * 10L,
+    	        	    MAX_DELAY_TICKS
+    	        	);
 
     	        Bukkit.getScheduler().runTaskLaterAsynchronously(
     	            DuelPlugin.getInstance(),
