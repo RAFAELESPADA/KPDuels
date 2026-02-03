@@ -11,7 +11,8 @@ public class Arena {
     private KitType kitType;
     private Location pos1, pos2;
     private Location spawn1, spawn2;
-
+    private final Location min;
+    private final Location max;
     public Arena(String name, KitType kitType, Location pos1, Location pos2, Location spawn1, Location spawn2) {
         this.name = name;
         this.kitType = kitType;
@@ -19,7 +20,23 @@ public class Arena {
         this.pos2 = pos2;
         this.spawn1 = spawn1;
         this.spawn2 = spawn2;
+        this.min = new Location(
+                pos1.getWorld(),
+                Math.min(pos1.getX(), pos2.getX()),
+                Math.min(pos1.getY(), pos2.getY()),
+                Math.min(pos1.getZ(), pos2.getZ())
+        );
+        this.max = new Location(
+                pos1.getWorld(),
+                Math.max(pos1.getX(), pos2.getX()),
+                Math.max(pos1.getY(), pos2.getY()),
+                Math.max(pos1.getZ(), pos2.getZ())
+        );
     }
+
+    public Location getMin() { return min; }
+    public Location getMax() { return max; }
+    
 
     public KitType getKitType() {
         return kitType;

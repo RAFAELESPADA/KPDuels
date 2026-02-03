@@ -1,11 +1,11 @@
 package me.rafaelauler.duels;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -26,13 +26,15 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class DuelGUIListener implements Listener {
 
     /* ======================= GUI ======================= */
-	  private boolean loaded = false;
+	private static final AtomicBoolean LOADED = new AtomicBoolean(false);
+
     @EventHandler
     public void onClick(InventoryClickEvent e) {
 
         if (!e.getView().getTitle().equals(DuelGUI.TITLE)) return;
         e.setCancelled(true);
-
+        if (e.getClickedInventory() == null) return;
+        if (!e.getClickedInventory().equals(e.getView().getTopInventory())) return;
         if (!(e.getWhoClicked() instanceof Player)) return;
         Player p = (Player) e.getWhoClicked();
 
@@ -112,10 +114,9 @@ public class DuelGUIListener implements Listener {
 
         Player winner = duel.getOpponent(dead);
         DuelManager.end(winner); // passe o duelo explicitamente
-        if (DuelProtectListener.BLOCK.keySet() != null) {
-        	for (Block b : DuelProtectListener.BLOCK.keySet()) {
-        		b.setType(Material.AIR);
-        	}
+
+        duel.clearPlacedBlocks();
+
         LobbyItems.give(dead);
         
         Bukkit.getScheduler().runTaskLater(DuelPlugin.getPlugin(DuelPlugin.class), () -> {
@@ -125,7 +126,7 @@ public class DuelGUIListener implements Listener {
 
         }, 50L);
         }}
-    }
+    
 
 
 
@@ -161,7 +162,7 @@ public class DuelGUIListener implements Listener {
 
         Duel duel = DuelManager.get(e.getPlayer());
         if (duel != null) {
-            DuelManager.forceEnd(e.getPlayer());
+            duel.handleQuit(e.getPlayer());
         }
 
         PlayerStats stats = PlayerStatsCache.get(uuid);
@@ -173,24 +174,18 @@ public class DuelGUIListener implements Listener {
 
     @EventHandler
     public void onWorldLoad(WorldLoadEvent event) {
-    	if (!ArenaManager.getArenas().isEmpty()) return;
-
-        // Evita carregar múltiplas vezes
-        if (loaded) return;
 
         if (!event.getWorld().getName().equalsIgnoreCase("duels")) return;
+        if (!LOADED.compareAndSet(false, true)) return;
+
         DuelPlugin plugin = DuelPlugin.getPlugin(DuelPlugin.class);
 
-        // Espera 1 tick para garantir registro completo
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-
             ArenaManager.loadArenas();
-            loaded = true;
-
-            Bukkit.getLogger().info("[Duels] Arenas carregadas após WorldLoadEvent.");
-
+            Bukkit.getLogger().info("[Duels] Arenas carregadas.");
         }, 1L);
     }
+
 
     /* ======================= INTERAÇÕES ======================= */
 
@@ -199,18 +194,83 @@ public class DuelGUIListener implements Listener {
 
         Player challenger = e.getPlayer();
 
-        if (!DuelsCommand.game.contains(challenger.getName())) return;
-        if (!ChallengeManager.isSelecting(challenger)) return;
         if (!(e.getRightClicked() instanceof Player)) return;
+        if (!DuelsCommand.game.contains(challenger.getName())) return;
 
-        if (DuelManager.isInDuel(challenger))  return;
+        UUID uuid = challenger.getUniqueId();
+
+        // 1️⃣ Packet spam / macro
+        if (!TickGuard.allow(uuid)) {
+            e.setCancelled(true);
+            return;
+        }
+
+        // 2️⃣ Double click
+        if (!ClickGuard.allow(uuid)) {
+            e.setCancelled(true);
+            return;
+        }
+
+        // 3️⃣ State validation (packet injection)
+        if (!ChallengeStateManager.is(uuid, ChallengeState.SELECTING_TARGET)) {
+            e.setCancelled(true);
+            return;
+        }
+
+        // 4️⃣ Kit validation
+        if (!ChallengeManager.hasSelectedKit(challenger)) {
+            e.setCancelled(true);
+            return;
+        }
+
         e.setCancelled(true);
 
         Player target = (Player) e.getRightClicked();
+        ChallengeStateManager.set(uuid, ChallengeState.PENDING_RESPONSE);
         ChallengeManager.challenge(challenger, target);
-        ChallengeChat.sendChallenge(challenger, target, KitType.SOUP);
+    }
+
+
+    @EventHandler
+    public void onQuit2(PlayerQuitEvent e) {
+        TickGuard.clear(e.getPlayer().getUniqueId());
     }
     
+    @EventHandler
+    public void onKitSelect(InventoryClickEvent e) {
+
+        if (!e.getView().getTitle().equals(ChallengeKitGUI.TITLE)) return;
+        e.setCancelled(true);
+        if (e.getClickedInventory() == null) return;
+        if (!e.getClickedInventory().equals(e.getView().getTopInventory())) return;
+        if (!(e.getWhoClicked() instanceof Player)) return;
+        Player p = (Player) e.getWhoClicked();
+
+if (!p.getOpenInventory().getTitle().equals(ChallengeKitGUI.TITLE)) {
+    // 🚨 packet fake
+    return;
+}
+        if (!ClickGuard.allow(p.getUniqueId())) return;
+
+        if (e.getCurrentItem() == null) return;
+
+        KitType kit = null;
+
+        switch (e.getCurrentItem().getType()) {
+            case DIAMOND_SWORD: kit = KitType.UHC; break;
+            case MUSHROOM_SOUP: kit = KitType.SOUP; break;
+            case IRON_CHESTPLATE: kit = KitType.SUMO; break;
+            case GOLD_SWORD: kit = KitType.BOXING; break;
+            case COBBLESTONE: kit = KitType.BUILD; break;
+            default: return;
+        }
+
+        ChallengeManager.selectKit(p, kit);
+        ChallengeStateManager.set(p.getUniqueId(), ChallengeState.SELECTING_TARGET);
+        p.closeInventory();
+    }
+
+
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
@@ -218,7 +278,10 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
 	return;
 }
         if (e.getItem() == null) return;
-
+        if (!TickGuard.allow(e.getPlayer().getUniqueId())) {
+            e.setCancelled(true);
+            return;
+        }
         Player p = e.getPlayer();
         Material type = e.getItem().getType();
 
@@ -232,7 +295,9 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
         if (type == Material.BLAZE_ROD) {
             e.setCancelled(true);
             if (!DuelManager.isInDuel(p)) {
-                ChallengeManager.startSelecting(p);
+                ChallengeKitGUI.open(p);
+                ChallengeStateManager.set(p.getUniqueId(), ChallengeState.SELECTING_KIT);
+
             }
             return;
         }
@@ -246,7 +311,7 @@ if (!DuelsCommand.game.contains(e.getPlayer().getName())) {
         if (type == Material.ENDER_PEARL) {
             e.setCancelled(true);
 
-            ChallengeManager.cancelSelecting(p);
+            ChallengeManager.clear(p);
 
             p.getInventory().clear();
             p.setHealth(20.0);

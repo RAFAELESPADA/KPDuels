@@ -1,12 +1,19 @@
 package me.rafaelauler.duels;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 public class Duel {
 
     private static MySQLManager mysql;
+    private final Set<Block> placedBlocks = new HashSet<>();
 
     public static void setMySQL(MySQLManager manager) {
         mysql = manager;
@@ -49,7 +56,30 @@ public class Duel {
 
         return true;
     }
+    public boolean isInsideArena(Location loc) {
 
+        if (loc == null) return false;
+        if (!loc.getWorld().equals(arena.getMin().getWorld())) return false;
+
+        double x = loc.getX();
+        double y = loc.getY();
+        double z = loc.getZ();
+
+        return x >= arena.getMin().getX() && x <= arena.getMax().getX()
+            && y >= arena.getMin().getY() && y <= arena.getMax().getY()
+            && z >= arena.getMin().getZ() && z <= arena.getMax().getZ();
+    }
+public void registerBlock(Block b) {
+    placedBlocks.add(b);
+}
+public boolean containsBlock(Block b) {
+    return placedBlocks.contains(b);
+}
+
+public void clearPlacedBlocks() {
+    placedBlocks.forEach(b -> b.setType(Material.AIR));
+    placedBlocks.clear();
+}
     public void end(Player winner) {
         if (state == DuelState.ENDED) return;
         state = DuelState.ENDED;
@@ -126,7 +156,16 @@ public class Duel {
     }
 
     
+    public void handleQuit(Player quitter) {
+        if (state == DuelState.ENDED) return;
 
+        Player winner = getOpponent(quitter);
+        if (winner == null || !winner.isOnline()) {
+            end(null);
+            return;
+        }
+        end(winner);
+    }
 
     /* ========================= */
 

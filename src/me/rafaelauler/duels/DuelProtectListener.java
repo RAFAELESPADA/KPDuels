@@ -1,13 +1,6 @@
 package me.rafaelauler.duels;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -22,7 +15,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class DuelProtectListener implements Listener {
 
-    public static final Map<Block, UUID> BLOCK = new HashMap<>();
     // Bloquear comandos enquanto estiver em duelo
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent e) {
@@ -30,7 +22,12 @@ public class DuelProtectListener implements Listener {
         if (DuelManager.isInDuel(p)) {
             String msg = e.getMessage().toLowerCase();
             // Permitir apenas comandos internos do duelo, ex: /duel /accept /deny
-            if (!msg.startsWith("/duel") && !msg.startsWith("/accept") && !msg.startsWith("/deny")) {
+            String cmd = msg.split(" ")[0];
+
+            if (!cmd.equals("/duel") &&
+                !cmd.equals("/accept") &&
+                !cmd.equals("/deny")) {
+
                 e.setCancelled(true);
                 p.sendMessage("§cVocê não pode usar comandos enquanto estiver em duelo!");
             }
@@ -40,6 +37,8 @@ public class DuelProtectListener implements Listener {
     public void onClick(InventoryClickEvent e) {
 
         if (!e.getView().getTitle().equals(StatsGUI.TITLE)) return;
+        if (e.getView().getTopInventory() == null) return;
+        if (!e.getView().getTopInventory().getTitle().equals(StatsGUI.TITLE)) return;
         e.setCancelled(true);
     }
     // Bloquear teleport externo
@@ -75,7 +74,7 @@ public class DuelProtectListener implements Listener {
                 // Impede sair da arena antes do duelo começar
                 Location from = e.getFrom();
                 Location to = e.getTo();
-                if (from.getBlockX() != to.getBlockX() || from.getBlockY() != to.getBlockY() || from.getBlockZ() != to.getBlockZ()) {
+                if (from.getX() != to.getX() || from.getZ() != to.getZ()) {
                     e.setCancelled(true);
                 }
             }
@@ -85,46 +84,62 @@ public class DuelProtectListener implements Listener {
     // Bloquear colocar ou quebrar blocos
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
-        if (DuelManager.isInDuel(e.getPlayer())) {
-        	Duel duel = DuelManager.get(e.getPlayer());
-        	if (duel.getKit() == KitType.BUILD) {
-        	BLOCK.put(e.getBlock(), UUID.randomUUID());
-                Bukkit.getScheduler().runTaskLater(DuelPlugin.getPlugin(DuelPlugin.class), () -> {
-if (BLOCK.keySet() != null) {
-                	for (Block b : BLOCK.keySet()) {
-                		b.setType(Material.AIR);
-                	}
-}}, 600L);
-                return;
-        	}
-            e.setCancelled(true);
-        }
-    }
+        Player p = e.getPlayer();
+        if (!DuelManager.isInDuel(p)) return;
 
+        Duel duel = DuelManager.get(p);
+
+        if (duel.getKit() != KitType.BUILD) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (!duel.isInsideArena(e.getBlock().getLocation())) {
+            e.setCancelled(true);
+            return;
+        }
+
+        duel.registerBlock(e.getBlock());
+    }
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
-        if (DuelManager.isInDuel(e.getPlayer())) {
+        Player p = e.getPlayer();
+        if (!DuelManager.isInDuel(p)) return;
 
-        	Duel duel = DuelManager.get(e.getPlayer());
-        	if (duel.getKit() == KitType.BUILD) {
-        		if (BLOCK.containsKey(e.getBlock())) {
-        			return;
-        		}
-        	}
+        Duel duel = DuelManager.get(p);
+
+        if (duel.getKit() != KitType.BUILD) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (!duel.isInsideArena(e.getBlock().getLocation())) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (!duel.containsBlock(e.getBlock())) {
+            e.setCancelled(true);
+        }
+    }
+    @EventHandler
+    public void onDa2mage(EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player)) return;
+
+        Player p = (Player) e.getEntity();
+        if (!DuelManager.isInDuel(p)) return;
+
+        Duel duel = DuelManager.get(p);
+
+        if (!duel.isInsideArena(p.getLocation())) {
             e.setCancelled(true);
         }
     }
 
+
+
     // Bloquear abrir inventário externo
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent e) {
-        if (e.getWhoClicked() instanceof Player) {
-            Player p = (Player) e.getWhoClicked();
-            if (DuelManager.isInDuel(p)) {
-                e.setCancelled(true);
-            }
-        }
-    }
+
 
     // Bloquear morrer fora do duelo
     @EventHandler

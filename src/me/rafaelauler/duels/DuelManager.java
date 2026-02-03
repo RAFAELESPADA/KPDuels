@@ -2,17 +2,18 @@ package me.rafaelauler.duels;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.entity.Player;
 
 public class DuelManager {
 
     private static final List<Duel> duels = Collections.synchronizedList(new ArrayList<>());
-    private static final Map<UUID, Integer> boxingHits = new HashMap<>();
+    private static final Map<UUID, Integer> boxingHits = new ConcurrentHashMap<>();
+
 
     public static void add(Duel duel) {
         duels.add(duel);
@@ -45,7 +46,7 @@ public class DuelManager {
     public static void end(Player winner) {
 
         Duel duel = get(winner);
-        if (duel == null) return;
+        if (duel == null || duel.getState() == DuelState.ENDED) return;
 
         synchronized (duels) {
             duel.end(winner);
@@ -54,16 +55,19 @@ public class DuelManager {
     }
 
     /** ⚠️ Usado apenas para quit / crash */
-    public static void forceEnd(Player p) {
+    public static void forceEnd(Player quitter) {
 
-        Duel duel = get(p);
+        Duel duel = get(quitter);
         if (duel == null) return;
 
+        Player winner = duel.getOpponent(quitter);
+
         synchronized (duels) {
-            duel.end(null);
+            duel.end(winner);
             duels.remove(duel);
         }
     }
+
 
     public static void addHit(Player p) {
         boxingHits.computeIfPresent(p.getUniqueId(), (k, v) -> v + 1);

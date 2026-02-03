@@ -5,7 +5,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-
 public class DuelCommand implements CommandExecutor {
 
     @Override
@@ -17,10 +16,22 @@ public class DuelCommand implements CommandExecutor {
         }
 
         Player p = (Player) sender;
-        if (ChallengeManager.inCooldown(p)) {
-            p.sendMessage("§cAguarde §f" + ChallengeManager.getCooldown(p) + "s §cpara desafiar novamente.");
+
+        // Segurança extra
+        if (DuelManager.isInDuel(p)) {
+            p.sendMessage("§cVocê já está em um duelo.");
             return true;
         }
+
+        // Cooldown centralizado
+        if (ChallengeManager.inCooldown(p)) {
+            p.sendMessage("§cAguarde §f"
+                    + ChallengeManager.getCooldown(p)
+                    + "s §cpara desafiar novamente.");
+            return true;
+        }
+
+        // Abre GUI de seleção de KIT
         DuelGUI.open(p);
         return true;
     }

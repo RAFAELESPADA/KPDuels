@@ -2,7 +2,6 @@ package me.rafaelauler.duels;
 
 
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.plugin.java.JavaPlugin;
 
 
@@ -55,6 +54,7 @@ public class DuelPlugin extends JavaPlugin {
             new DuelPlaceHolder().register();
         }
         StatsSaveService.start();
+        ServerTick.start(this);
 
         Bukkit.getScheduler().runTaskTimerAsynchronously(
             this,
@@ -107,11 +107,8 @@ public class DuelPlugin extends JavaPlugin {
         DuelManager.getAllDuels()
             .forEach(d -> DuelManager.forceEnd(d.getP1()));
 
-        // Limpa blocos protegidos
-        if (DuelProtectListener.BLOCK != null) {
-            DuelProtectListener.BLOCK.keySet().forEach(b -> {
-                if (b != null) b.setType(Material.AIR);
-            });
+        for (Duel duels : DuelManager.getAllDuels()) {
+        	duels.clearPlacedBlocks();
         }
         getLogger().info("Flush final de stats completo");
         getLogger().info("§cDuels plugin desativado!");

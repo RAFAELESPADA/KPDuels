@@ -11,14 +11,10 @@ public class DenyCommand implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 
         if (!(sender instanceof Player)) return true;
-        Player target = (Player) sender;
+Player p = (Player) sender;
+        ChallengeManager.deny((Player) sender);
+        ChallengeStateManager.clear(p.getUniqueId());
 
-        if (!ChallengeManager.hasChallenge(target)) {
-            target.sendMessage("§cVocê não tem nenhum desafio pendente!");
-            return true;
-        }
-
-        ChallengeManager.deny(target);
         return true;
     }
 }
