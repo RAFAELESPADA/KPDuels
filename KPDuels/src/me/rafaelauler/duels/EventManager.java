@@ -255,6 +255,8 @@ public final class EventManager {
         }
         removeMember(player, true, true);
         player.sendMessage(color(message("messages.leave", "&aVocê saiu do evento.")));
+        dispatchPlayerCommands(player, "events.commands.on-leave-player", "evento");
+        dispatchCommands("events.commands.on-leave-console", player, "evento");
     }
 
     private void removeMember(Player player, boolean teleport, boolean restore) {
