@@ -1,0 +1,29 @@
+ALTERAÇÕES - MODO GLADIATOR
+===========================
+
+1. Jaula ampliada de 7x7 para 56x56 blocos (8 vezes a largura original).
+   A altura permanece em 7 blocos.
+2. Os jogadores começam em lados opostos, perto das paredes da jaula ampliada.
+3. A geração de arenas aleatórias considera toda a área de 56x56, verifica a borda
+   do mundo e evita arenas/jogadores próximos.
+4. No kit Gladiator, a quebra é permitida somente para o jogador que colocou o bloco.
+   Paredes, teto, piso e blocos do adversário não podem ser quebrados.
+5. O estado original dos blocos continua sendo restaurado ao fim do duelo.
+
+O diretório bin foi removido do pacote para evitar distribuir arquivos .class antigos.
+Ao abrir o projeto no Eclipse, execute Project > Clean/Build para recompilar usando
+as dependências Bukkit/Paper configuradas no .classpath.
+
+6. Inventário completo do Gladiator ajustado conforme a referência:
+   - Hotbar: espada de diamante com Sharpness I, balde de água, balde de lava,
+     64 tábuas de carvalho, quatro sopas e 64 pedregulhos.
+   - Primeira e segunda fileiras: uma armadura extra completa, 64 tigelas,
+     três pilhas de 64 cogumelos marrons e um machado de ferro em cada fileira.
+   - Última fileira: dois baldes de lava e sete sopas.
+   - O jogador também inicia vestindo a armadura completa de ferro.
+
+7. Água e lava também são removidas ao encerrar o Gladiator:
+   - O bloco atingido ao esvaziar baldes é registrado antes da alteração.
+   - Cada bloco alcançado pelo fluxo de água/lava também é registrado.
+   - O fluxo para fora dos limites da arena é cancelado.
+   - Ao finalizar o duelo, os estados originais são restaurados junto com a jaula.

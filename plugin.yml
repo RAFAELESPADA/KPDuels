@@ -1,0 +1,63 @@
+name: Duels
+version: 1.0
+main: me.rafaelauler.duels.DuelPlugin
+api-version: '1.21'
+softdepend: [PlaceholderAPI]
+commands:
+  duel:
+    description: Entrar em um duelo
+  accept:
+    description: Aceitar desafio
+  deny:
+    description: Recusar desafio
+  duels:
+    description: Entrar no lobby de Duels
+  setduelspawn:
+  setduelarena:
+  setschematic:
+  saveschematic:
+    description: Salva a seleção atual do WorldEdit como schematic
+    usage: /saveschematic <nome>
+  listarenas:
+  evento:
+    description: Entrar, sair e administrar eventos
+    aliases: [event]
+    usage: /evento <entrar|sair|abrir|fechar|pvp|iniciar|parar|modo|puxar1v1|puxarsumo>
+  set-eventos-spawn:
+    description: Define o ponto de entrada da sala de eventos
+    permission: event.admin
+  set-eventos-saida:
+    description: Define o ponto de saída da sala de eventos
+    permission: event.admin
+  seteventlocal:
+    description: Define um local de modalidade do evento
+    permission: event.admin
+    usage: /seteventlocal <local> [loc1|loc2]
+  puxarevento:
+    description: Puxa os jogadores do evento para uma modalidade
+    permission: event.admin
+    usage: /puxarevento <sumo|1v1|mdr|lava>
+  setwinner:
+    description: Define o vencedor do evento e encerra a partida
+    permission: event.admin
+    usage: /setwinner <jogador>
+  eventoadmin:
+    description: Painel GUI e administração avançada dos eventos
+    usage: /eventoadmin [modos|classicos|modo|puxar|confronto|kits|countdown|broadcast|clima|hora|mundo|blocos]
+  eventokit:
+    description: Salva kits do inventário e os aplica em jogadores/eventos
+    usage: /eventokit <salvar|dar|todos|vincular|listar|apagar>
+  comocriarevento:
+    description: Exibe um tutorial completo de criação e organização de eventos
+    permission: event.admin
+    usage: /comocriarevento
+permissions:
+  event.admin:
+    description: Permite administrar o sistema de eventos do KPDuels
+    default: op
+  events.admin:
+    description: Permissão legada de administração dos eventos
+    default: op
+  events.blockedcmds:
+    description: Ignora a whitelist de comandos enquanto estiver em um evento
+    default: op

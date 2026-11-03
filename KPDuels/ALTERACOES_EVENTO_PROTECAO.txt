@@ -1,0 +1,12 @@
+KPDuels - Proteção de dano antes do início do evento
+
+Alterações:
+- Participantes ficam invulneráveis enquanto eventStarted for false.
+- A proteção permanece durante todo o countdown iniciado por /evento start.
+- A invulnerabilidade é liberada somente no tick em que o countdown envia 0 e EventManager marca o evento como iniciado.
+- São cancelados danos ambientais e demais fontes de dano durante a preparação (queda, void, fogo, lava, sufocamento, afogamento, fome, mobs, explosões, projéteis etc.).
+- Fogo, veneno, Wither, congelamento, afogamento e fome têm seus estados perigosos limpos quando detectados.
+- Dano de void/sufocamento pode retornar o participante ao spawn configurado do evento, evitando que permaneça preso em uma situação letal.
+
+Arquivo alterado:
+- src/me/rafaelauler/duels/EventListener.java

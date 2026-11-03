@@ -1,0 +1,63 @@
+ATUALIZAÇÃO - CONFRONTOS DE EVENTO 1V1 E SUMO
+
+Novos comandos:
+- /seteventlocal 1v1 loc1
+- /seteventlocal 1v1 loc2
+- /seteventlocal sumo loc1
+- /seteventlocal sumo loc2
+- /evento puxar1v1
+- /evento puxarsumo
+
+Fluxo:
+1. Configure a área de espera com /seteventlocal 1v1 ou /seteventlocal sumo.
+2. Configure loc1 e loc2 para cada modalidade.
+3. Abra a sala, faça os jogadores entrarem e inicie o evento.
+4. Use /puxarevento 1v1 ou /puxarevento sumo para registrar a modalidade e levar os participantes à espera.
+5. Use /evento puxar1v1 ou /evento puxarsumo para iniciar um confronto entre os dois primeiros participantes elegíveis.
+
+Regras do confronto:
+- Apenas um confronto ativo por modalidade, pois existe apenas um par de posições loc1/loc2.
+- Countdown configurável (padrão 5 até 0), enviado no chat e na tela.
+- O PvP fica bloqueado durante o countdown e é liberado somente entre os dois jogadores do par.
+- Se um deles morrer, respawna no próprio lado; ambos são reposicionados e um novo countdown começa.
+- Participantes desses confrontos não viram espectadores ao morrer.
+- Kills válidas continuam sendo contabilizadas na tabela MySQL própria de eventos.
+
+Configuração:
+events.pair-matches.countdown-seconds
+
+events.pull-locations.<modalidade>.location  -> área de espera
+events.pull-locations.<modalidade>.loc1      -> primeira posição
+events.pull-locations.<modalidade>.loc2      -> segunda posição
+
+Validação realizada: YAML de config.yml e plugin.yml válido; parser Java não apontou erros de sintaxe. A compilação integral ainda depende dos JARs externos declarados no .classpath, que não acompanham a source.
+
+ATUALIZAÇÃO - COMANDOS AUTOMÁTICOS E WHITELIST DO EVENTO
+
+Comandos executados após entrada:
+- events.commands.on-join-player no config.yml executa cada linha como o próprio jogador após /evento join ou /evento entrar ser concluído com sucesso.
+- Placeholders disponíveis: %player%, %uuid% e %event%.
+- As permissões verificadas pelos comandos são as permissões reais do jogador; os comandos não são executados pelo console.
+
+Whitelist de comandos:
+- events.command-whitelist.enabled ativa/desativa o bloqueio.
+- events.command-whitelist.allowed define os comandos permitidos para participantes e espectadores.
+- Uma entrada simples, como "msg", permite todas as subopções desse comando.
+- Uma entrada com argumentos, como "evento sair", permite somente esse caminho e seus argumentos adicionais.
+- events.command-whitelist.blocked-message define a mensagem enviada ao tentar usar um comando bloqueado.
+- A permissão events.blockedcmds ignora a whitelist; seu padrão no plugin.yml é op.
+
+Validação desta atualização:
+- config.yml e plugin.yml analisados com parser YAML: válidos.
+- Verificação estrutural dos blocos Java modificados: chaves e parênteses balanceados.
+- Compilação integral não executada: os JARs externos do .classpath não estão incluídos no ZIP.
+
+
+ATUALIZACAO DE KITS E DANO (EVENTOS)
+
+- 1v1 agora inicia com espada de diamante no slot 0, 35 sopas nos slots restantes e armadura completa de ferro.
+- As sopas do evento 1v1 podem ser consumidas com clique direito: curam vida/fome e viram tigela. A regeneracao natural por fome e desativada nesse modo.
+- O kit do 1v1 e reaplicado quando o round reinicia apos uma morte.
+- No Sumo, hits do adversario continuam registrados e aplicam knockback manual, mas causam zero dano de vida.
+- Dano ambiental e ataques externos tambem sao bloqueados durante o confronto de Sumo; void retorna o jogador ao seu lado da arena.
+- Ajuste do knockback em events.pair-matches.sumo-knockback.horizontal e vertical no config.yml.

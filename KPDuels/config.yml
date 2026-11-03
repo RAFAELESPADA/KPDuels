@@ -1,0 +1,238 @@
+# Configuração do modo Gladiator. A arena é gerada em uma posição aleatória
+# dentro deste raio, medido a partir do spawn do mundo configurado.
+gladiator:
+  world: Duels
+  random-radius: 5000
+  min-distance-from-spawn: 150
+  attempts: 50
+  # Usado apenas se o mundo for void (sem terreno sólido sob a posição aleatória).
+  floating-y: 80
+
+arenas:
+  sumo1:
+    world: duels
+    kit: SUMO
+    spawn1: 61645.62319172236,56.0,661567.5631526835,179.55058,6.4500203
+    spawn2: 61645.547732355844,56.0,661555.2271044047,1.5006216,2.2500196
+    pos1: 61612.0,17.0,661513.0,0.0,0.0
+    pos2: 61684.0,126.0,661626.0,0.0,0.0
+  sumo2:
+    world: duels
+    kit: SUMO
+    spawn1: 61645.35198180458,64.0,66167.73089026732,179.5495,4.650024
+    spawn2: 61645.61743738153,64.0,66155.32252265752,359.0994,4.50002
+    pos1: 61614.0,39.0,66131.0,0.0,0.0
+    pos2: 61686.0,112.0,66197.0,0.0,0.0
+  soup1:
+    world: duels
+    kit: SOUP
+    spawn1: 61620.846378805225,29.0,6669.934855569616,-180.45,1.8000247
+    spawn2: 61620.82023654284,29.0,6640.59273620183,0.74997836,2.1000216
+    pos1: 61570.0,16.0,6605.0,0.0,0.0
+    pos2: 61654.0,79.0,6727.0,0.0,0.0
+  uhc:
+    world: duels
+    kit: UHC
+    spawn1: 61621.742152419756,30.0,694.8454555197686,180.2984,4.049895
+    spawn2: 61621.83856258264,30.0,642.6641688013259,2.248291,3.1498923
+    pos1: 61584.0,7.0,593.0,0.0,0.0
+    pos2: 61657.0,94.0,727.0,0.0,0.0
+  boxing:
+    world: duels
+    kit: BOXING
+    spawn1: 61624.37918839389,28.0,139.43578366044616,180.2992,5.6998944
+    spawn2: 61623.10116774453,28.0,89.75785193301755,-1.9507815,-1.9500965
+    pos1: 61583.0,13.0,57.0,0.0,0.0
+    pos2: 61649.0,71.0,169.0,0.0,0.0
+  build1:
+    world: duels
+    kit: BUILD
+    spawn1: 56136.88539461241,35.0,6176.071200244759,359.39987,1.7999161
+    spawn2: 56137.07970241439,35.0,6232.4635770207615,183.14987,-1.4999866
+    pos1: 56100.0,9.0,6152.0,0.0,0.0
+    pos2: 56179.0,97.0,6266.0,0.0,0.0
+  build2:
+    world: duels
+    kit: BUILD
+    spawn1: 56137.29531217726,28.0,61669.92163072616,357.1485,1.0499107
+    spawn2: 56136.99687620497,28.0,61715.42766521759,181.1983,0.14993164
+    pos1: 56095.0,4.0,61637.0,0.0,0.0
+    pos2: 56176.0,89.0,61768.0,0.0,0.0
+mysql:
+  host: host
+  port: 3306
+  database: geral
+  user: user
+  password: "senha"
+
+# ==============================================
+# SISTEMA DE EVENTOS - KPDuels
+# ==============================================
+events:
+  # Defina dentro do servidor com /set-eventos-spawn e /set-eventos-saida.
+  spawn: ""
+  exit: ""
+
+  # Todos os participantes ficam invulneráveis até o countdown global
+  # iniciado por /evento start chegar a 0. A proteção é automática.
+  countdown:
+    seconds: 10
+    chat: "&eO evento começa em &f%time%&e..."
+    title: "&a%time%"
+    subtitle: "&ePrepare-se!"
+
+  broadcast:
+    enabled: true
+    interval-seconds: 30
+    # Uma mensagem por intervalo; a lista é percorrida em sequência.
+    messages:
+      - "&b&lEVENTO &7» &fA sala está aberta! Use &a/evento entrar&f para participar."
+      - "&b&lEVENTO &7» &fEntre agora! Acesse &a/evento entrar&f."
+
+  messages:
+    room-open: "&a&lEVENTO &7» &fA sala de eventos foi aberta! Use &a/evento entrar&f."
+    room-closed: "&cA sala de eventos está fechada."
+    room-closed-broadcast: "&c&lEVENTO &7» &fA sala de eventos foi fechada."
+    join: "&aVocê entrou no evento! Aguarde as instruções da organização."
+    leave: "&cVocê saiu do evento."
+    pvp-enabled: "&aO PvP do evento foi ativado!"
+    pvp-disabled: "&cO PvP do evento foi desativado!"
+    started: "&a&lEVENTO &7» &fO evento começou! Boa sorte a todos!"
+    stopped: "&c&lEVENTO &7» &fO evento foi encerrado pela organização."
+    winner: "&6&lEVENTO &7» &f%player% &avenceu o evento!"
+
+  commands:
+    # Executados pelo próprio jogador depois que /evento join concluir com sucesso.
+    # Os comandos usam as permissões do jogador (não do console).
+    # Placeholders disponíveis: %player%, %uuid% e %event%.
+    # Exemplos: "spawn", "kit evento", "effect give %player% speed 5 1"
+    on-join-player: []
+
+    # Executados pelo console para cada jogador que estava no evento ao encerrá-lo.
+    # Placeholders: %player% e %uuid%.
+    on-stop: []
+    # Executados pelo console apenas para o vencedor marcado com /setwinner.
+    on-winner: []
+
+  # Whitelist de comandos durante o evento (vale para participantes e espectadores).
+  command-whitelist:
+    enabled: true
+    # Para liberar um comando completo, use o caminho com argumentos, ex.: "evento sair".
+    # Para liberar todas as sub-rotas de um comando, informe só o nome, ex.: "msg".
+    allowed:
+      - "evento sair"
+      - "evento leave"
+      - "event sair"
+      - "event leave"
+      - "msg"
+      - "tell"
+      - "w"
+      - "whisper"
+      - "r"
+      - "reply"
+    blocked-message: "&cEsse comando não está permitido durante o evento."
+
+  # Locais configurados por /seteventlocal <nome>.
+  # Os textos abaixo são enviados individualmente para cada participante puxado.
+  pull-locations:
+    sumo:
+      # Área geral onde os jogadores aguardam antes de /evento puxarsumo.
+      location: ""
+      # Posições dos dois lados de cada confronto. Defina com:
+      # /seteventlocal sumo loc1
+      # /seteventlocal sumo loc2
+      loc1: ""
+      loc2: ""
+      instructions:
+        - "&e&lSUMO &7» &fVocê foi puxado para o evento de Sumo! Aguarde as instruções."
+    1v1:
+      # Área geral onde os jogadores aguardam antes de /evento puxar1v1.
+      location: ""
+      # Posições dos dois lados de cada confronto. Defina com:
+      # /seteventlocal 1v1 loc1
+      # /seteventlocal 1v1 loc2
+      loc1: ""
+      loc2: ""
+      instructions:
+        - "&e&l1V1 &7» &fVocê foi puxado para o evento 1v1! Aguarde as instruções."
+    mdr:
+      location: ""
+      instructions:
+        - "&e&lMDR &7» &fVocê foi puxado para o evento MDR! Aguarde as instruções."
+    lava:
+      location: ""
+      instructions:
+        - "&e&lLAVA &7» &fVocê recebeu inventário completo de sopas e está sem armadura."
+        - "&7Clique com o botão direito para consumir uma sopa e recuperar vida/fome."
+
+    luckyblock:
+      location: ""
+      instructions: ["&eQuebre os Lucky Blocks de ouro para receber sorte ou azar!"]
+    arena:
+      location: ""
+      instructions: ["&eTodos contra todos! Último sobrevivente vence."]
+    sopa:
+      location: ""
+      instructions: ["&eLute com suas sopas até restar um vencedor!"]
+    arco:
+      location: ""
+      instructions: ["&eCombate de arqueiros. Último em pé vence!"]
+    parkour:
+      location: ""
+      finish: ""
+      instructions: ["&eChegue primeiro ao ponto final configurado!"]
+    corrida:
+      location: ""
+      finish: ""
+      instructions: ["&eCorra até a linha de chegada!"]
+    rei_do_morro:
+      location: ""
+      point: ""
+      instructions: ["&eControle o ponto sozinho para somar pontos!"]
+
+  # Configuração dos confrontos automáticos 1v1 e Sumo.
+  # O PvP só é liberado entre os dois jogadores do mesmo par ao chegar em 0.
+  pair-matches:
+    countdown-seconds: 5
+    match-found: "&aVocê foi pareado contra &f%opponent%&a!"
+    countdown-chat: "&eA luta começa em &f%time%&e..."
+    countdown-title: "&a%time%"
+    countdown-subtitle: "&ePrepare-se!"
+    started: "&a&lLUTE! &7PvP liberado para este confronto."
+    # No Sumo, os hits não causam dano de vida; o knockback é aplicado separadamente.
+    sumo-knockback:
+      horizontal: 0.55
+      vertical: 0.32
+    round-reset: "&eUm jogador morreu. O confronto será reiniciado!"
+    waiting: "&eVocê está aguardando o próximo adversário."
+    opponent-left: "&cSeu adversário saiu do confronto."
+
+
+  # ==============================================
+  # EVENTOS AVANÇADOS - locais definidos por /seteventlocal
+  # Não utilize o mundo global: apenas os mundos dos locais configurados.
+  # ==============================================
+  admin:
+    # Mudar clima/hora afeta TODOS os jogadores do mundo selecionado.
+    # Fica bloqueado por padrão para não interferir em minigames.
+    world-controls-enabled: false
+  extra:
+    selected: ""
+    finish-radius: 2.5
+    luckyblock:
+      radius: 12
+      max-blocks: 12
+      spawn-interval-seconds: 20
+    hill:
+      radius: 4
+      points-to-win: 30
+    modes:
+      luckyblock: {kit: ""}
+      arena: {kit: ""}
+      sopa: {kit: ""}
+      arco: {kit: ""}
+      parkour: {kit: ""}
+      corrida: {kit: ""}
+      rei_do_morro: {kit: ""}
+  # Use /seteventlocal <modo> para configurar o ponto de entrada no jogo.
+  # Use /seteventlocal parkour finish, corrida finish, rei_do_morro point.

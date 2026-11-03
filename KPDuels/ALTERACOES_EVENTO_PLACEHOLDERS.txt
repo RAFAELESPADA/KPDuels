@@ -1,0 +1,17 @@
+PLACEHOLDERS DE KILLS E DEATHS DO EVENTO
+
+Placeholders registrados pelo PlaceholderAPI:
+  %kpduels_event_kills%  - total de kills obtidas em eventos.
+  %kpduels_event_deaths% - total de mortes sofridas em eventos.
+
+Alias aceitos pelo expansion internamente: eventkills e eventdeaths.
+
+Os valores são persistidos em kpduels_event_stats, em colunas separadas das estatísticas dos duelos.
+A tabela é criada automaticamente e instalações existentes recebem a coluna deaths por migração automática.
+O contador de deaths aumenta quando um jogador membro do evento morre, independente de ser morte ambiental, eliminação normal ou round de 1v1/Sumo.
+
+
+Proteção de dano antes do início:
+- Participantes ficam invulneráveis até /evento start concluir o countdown e chegar a 0.
+- Dano ambiental, mobs, explosões, projéteis e demais fontes são cancelados durante a preparação.
+- Fogo, veneno, Wither, congelamento, afogamento e fome são limpos quando detectados; queda no void/sufocamento retorna ao spawn do evento quando configurado.
